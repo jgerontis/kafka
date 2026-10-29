@@ -1129,10 +1129,13 @@ public class KafkaProducerTest {
 
     @Test
     public void testInvalidGenerationIdAndMemberIdCombinedInSendOffsets() {
-        verifyInvalidGroupMetadata(new ConsumerGroupMetadata("group", 2, JoinGroupRequest.UNKNOWN_MEMBER_ID, Optional.empty()));
+        IllegalArgumentException e = verifyInvalidGroupMetadata(
+            new ConsumerGroupMetadata("group", 2, JoinGroupRequest.UNKNOWN_MEMBER_ID, Optional.empty()));
+        assertTrue(e.getMessage().endsWith("has generationId > 0 but the member.id is unknown"),
+            "Unexpected error message: " + e.getMessage());
     }
 
-    private void verifyInvalidGroupMetadata(ConsumerGroupMetadata groupMetadata) {
+    private IllegalArgumentException verifyInvalidGroupMetadata(ConsumerGroupMetadata groupMetadata) {
         Map<String, Object> configs = new HashMap<>();
         configs.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, "some.id");
         configs.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 10000);
@@ -1155,7 +1158,7 @@ public class KafkaProducerTest {
             new StringSerializer(), metadata, client, null, time)) {
             producer.initTransactions();
             producer.beginTransaction();
-            assertThrows(IllegalArgumentException.class,
+            return assertThrows(IllegalArgumentException.class,
                 () -> producer.sendOffsetsToTransaction(Collections.emptyMap(), groupMetadata));
         }
     }
