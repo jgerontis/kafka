@@ -18,6 +18,7 @@ package org.apache.kafka.streams.state.internals;
 
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.state.KeyValueIterator;
@@ -38,6 +39,27 @@ import static org.junit.Assert.assertFalse;
 public class InMemoryWindowStoreTest extends AbstractWindowBytesStoreTest {
 
     private final static String STORE_NAME = "InMemoryWindowStore";
+
+    @Test
+    public void shouldNotDeprecateFetchByKeyAndTimeRange() throws NoSuchMethodException {
+        assertFalse(InMemoryWindowStore.class
+            .getDeclaredMethod("fetch", Bytes.class, long.class, long.class)
+            .isAnnotationPresent(Deprecated.class));
+    }
+
+    @Test
+    public void shouldNotDeprecateFetchByKeyRangeAndTimeRange() throws NoSuchMethodException {
+        assertFalse(InMemoryWindowStore.class
+            .getDeclaredMethod("fetch", Bytes.class, Bytes.class, long.class, long.class)
+            .isAnnotationPresent(Deprecated.class));
+    }
+
+    @Test
+    public void shouldNotDeprecateFetchAllByTimeRange() throws NoSuchMethodException {
+        assertFalse(InMemoryWindowStore.class
+            .getDeclaredMethod("fetchAll", long.class, long.class)
+            .isAnnotationPresent(Deprecated.class));
+    }
 
     @Override
     <K, V> WindowStore<K, V> buildWindowStore(final long retentionPeriod,
