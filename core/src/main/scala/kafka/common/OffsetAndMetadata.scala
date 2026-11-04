@@ -21,7 +21,7 @@ import java.util.Optional
 
 case class OffsetAndMetadata(offset: Long,
                              leaderEpoch: Optional[Integer],
-                             metadata: String,
+                             remoteLogMetadata: String,
                              commitTimestamp: Long,
                              expireTimestamp: Option[Long]) {
 
@@ -29,7 +29,7 @@ case class OffsetAndMetadata(offset: Long,
   override def toString: String  = {
     s"OffsetAndMetadata(offset=$offset" +
       s", leaderEpoch=$leaderEpoch" +
-      s", metadata=$metadata" +
+      s", remoteLogMetadata=$remoteLogMetadata" +
       s", commitTimestamp=$commitTimestamp" +
       s", expireTimestamp=$expireTimestamp)"
   }
@@ -38,11 +38,11 @@ case class OffsetAndMetadata(offset: Long,
 object OffsetAndMetadata {
   val NoMetadata: String = ""
 
-  def apply(offset: Long, metadata: String, commitTimestamp: Long): OffsetAndMetadata = {
-    OffsetAndMetadata(offset, Optional.empty(), metadata, commitTimestamp, None)
+  def apply(offset: Long, remoteLogMetadata: String, commitTimestamp: Long): OffsetAndMetadata = {
+    OffsetAndMetadata(offset, Optional.empty(), remoteLogMetadata, commitTimestamp, None)
   }
 
-  def apply(offset: Long, metadata: String, commitTimestamp: Long, expireTimestamp: Long): OffsetAndMetadata = {
-    OffsetAndMetadata(offset, Optional.empty(), metadata, commitTimestamp, Some(expireTimestamp))
+  def apply(offset: Long, remoteLogMetadata: String, commitTimestamp: Long, expireTimestamp: Long): OffsetAndMetadata = {
+    OffsetAndMetadata(offset, Optional.empty(), remoteLogMetadata, commitTimestamp, Some(expireTimestamp))
   }
 }

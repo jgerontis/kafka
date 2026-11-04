@@ -32,7 +32,7 @@ import kafka.coordinator.transaction.{InitProducerIdResult, TransactionCoordinat
 import kafka.log.AppendOrigin
 import kafka.network.RequestChannel
 import kafka.server.QuotaFactory.QuotaManagers
-import kafka.server.metadata.{ConfigRepository, KRaftMetadataCache, MockConfigRepository}
+import kafka.server.remoteLogMetadata.{ConfigRepository, KRaftMetadataCache, MockConfigRepository}
 import kafka.utils.{MockTime, TestUtils}
 import kafka.zk.KafkaZkClient
 import org.apache.kafka.clients.admin.AlterConfigOp.OpType
@@ -1175,7 +1175,7 @@ class KafkaApisTest {
     EasyMock.replay(replicaManager, clientRequestQuotaManager,
       autoTopicCreationManager, forwardingManager, clientControllerQuotaManager, groupCoordinator, txnCoordinator)
 
-    // if version is 10 or 11, the invalid topic metadata should return an error
+    // if version is 10 or 11, the invalid topic remoteLogMetadata should return an error
     val invalidVersions = Set(10, 11)
     invalidVersions.foreach( version =>
       topics.foreach(topic => {
@@ -1973,12 +1973,12 @@ class KafkaApisTest {
   def testDescribeGroups(): Unit = {
     val groupId = "groupId"
     val random = new Random()
-    val metadata = new Array[Byte](10)
-    random.nextBytes(metadata)
+    val remoteLogMetadata = new Array[Byte](10)
+    random.nextBytes(remoteLogMetadata)
     val assignment = new Array[Byte](10)
     random.nextBytes(assignment)
 
-    val memberSummary = MemberSummary("memberid", Some("instanceid"), "clientid", "clienthost", metadata, assignment)
+    val memberSummary = MemberSummary("memberid", Some("instanceid"), "clientid", "clienthost", remoteLogMetadata, assignment)
     val groupSummary = GroupSummary("Stable", "consumer", "roundrobin", List(memberSummary))
 
     EasyMock.reset(groupCoordinator, replicaManager, clientRequestQuotaManager, requestChannel)
@@ -2010,7 +2010,7 @@ class KafkaApisTest {
     assertEquals(memberSummary.groupInstanceId.orNull, member.groupInstanceId())
     assertEquals(memberSummary.clientId, member.clientId())
     assertEquals(memberSummary.clientHost, member.clientHost())
-    assertArrayEquals(memberSummary.metadata, member.memberMetadata())
+    assertArrayEquals(memberSummary.remoteLogMetadata, member.memberMetadata())
     assertArrayEquals(memberSummary.assignment, member.memberAssignment())
   }
 
@@ -2189,7 +2189,7 @@ class KafkaApisTest {
   }
 
   /**
-   * Verifies that the metadata response is correct if the broker listeners are inconsistent (i.e. one broker has
+   * Verifies that the remoteLogMetadata response is correct if the broker listeners are inconsistent (i.e. one broker has
    * more listeners than another) and the request is sent on the listener that exists in both brokers.
    */
   @Test
@@ -2200,7 +2200,7 @@ class KafkaApisTest {
   }
 
   /**
-   * Verifies that the metadata response is correct if the broker listeners are inconsistent (i.e. one broker has
+   * Verifies that the remoteLogMetadata response is correct if the broker listeners are inconsistent (i.e. one broker has
    * more listeners than another) and the request is sent on the listener that exists in one broker.
    */
   @Test
@@ -2221,7 +2221,7 @@ class KafkaApisTest {
    */
   @Test
   def getAllTopicMetadataShouldNotCreateTopicOrReturnUnknownTopicPartition(): Unit = {
-    // Setup: authorizer authorizes 2 topics, but one got deleted in metadata cache
+    // Setup: authorizer authorizes 2 topics, but one got deleted in remoteLogMetadata cache
     metadataCache =
       EasyMock.partialMockBuilder(classOf[ZkMetadataCache])
         .withConstructor(classOf[Int])
@@ -2233,7 +2233,7 @@ class KafkaApisTest {
     // 2 topics returned for authorization in during handle
     val topicsReturnedFromMetadataCacheForAuthorization = Set("remaining-topic", "later-deleted-topic")
     expect(metadataCache.getAllTopics()).andReturn(topicsReturnedFromMetadataCacheForAuthorization).once()
-    // 1 topic is deleted from metadata right at the time between authorization and the next getTopicMetadata() call
+    // 1 topic is deleted from remoteLogMetadata right at the time between authorization and the next getTopicMetadata() call
     expect(metadataCache.getTopicMetadata(
       EasyMock.eq(topicsReturnedFromMetadataCacheForAuthorization),
       anyObject[ListenerName],
@@ -2271,7 +2271,7 @@ class KafkaApisTest {
     val response = sendMetadataRequestWithInconsistentListeners(requestListener)
 
     assertFalse(createTopicIsCalled)
-    val responseTopics = response.topicMetadata().asScala.map { metadata => metadata.topic() }
+    val responseTopics = response.topicMetadata().asScala.map { remoteLogMetadata => remoteLogMetadata.topic() }
     assertEquals(List("remaining-topic"), responseTopics)
     assertTrue(response.topicsByError(Errors.UNKNOWN_TOPIC_OR_PARTITION).isEmpty)
   }
@@ -3480,7 +3480,7 @@ class KafkaApisTest {
       Collections.singletonList(action)
     }
 
-    // Topic `foo` is authorized and present in the metadata
+    // Topic `foo` is authorized and present in the remoteLogMetadata
     addTopicToMetadataCache(tp1.topic, 4) // We will only access the first topic
     EasyMock.expect(authorizer.authorize(anyObject[RequestContext], EasyMock.eq(buildExpectedActions(tp1.topic))))
       .andReturn(Seq(AuthorizationResult.ALLOWED).asJava)
@@ -3491,7 +3491,7 @@ class KafkaApisTest {
       .andReturn(Seq(AuthorizationResult.DENIED).asJava)
       .once()
 
-    // Topic `baz` is authorized, but not present in the metadata
+    // Topic `baz` is authorized, but not present in the remoteLogMetadata
     EasyMock.expect(authorizer.authorize(anyObject[RequestContext], EasyMock.eq(buildExpectedActions(tp3.topic))))
       .andReturn(Seq(AuthorizationResult.ALLOWED).asJava)
       .once()

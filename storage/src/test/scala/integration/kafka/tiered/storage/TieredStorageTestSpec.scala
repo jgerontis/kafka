@@ -35,7 +35,7 @@ import org.apache.kafka.server.log.remote.storage.LocalTieredStorageCondition.ex
 import org.apache.kafka.server.log.remote.storage.LocalTieredStorageEvent.EventType.{DELETE_SEGMENT, FETCH_SEGMENT, OFFLOAD_SEGMENT}
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentFileset
 import org.apache.kafka.common.serialization.{Serde, Serdes}
-import org.apache.kafka.server.log.remote.metadata.storage.{RemoteLogMetadataTopicPartitioner, TopicBasedRemoteLogMetadataManagerConfig}
+import org.apache.kafka.server.log.remote.remoteLogMetadata.storage.{RemoteLogMetadataTopicPartitioner, TopicBasedRemoteLogMetadataManagerConfig}
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.jupiter.api.Assertions.{assertEquals, assertFalse, assertTrue, fail}
 
@@ -596,11 +596,11 @@ final class ExpectUserTopicMappedToMetadataPartitionsAction(val topic: String, v
       map(info => new TopicIdPartition(topicId, new TopicPartition(topic, info.partition())))
       .map(partitioner.metadataPartition)
     assertTrue(metadataPartitions.forall(actualMetadataPartitions.contains),
-      s"metadata-partition distribution expected: $metadataPartitions, actual: $actualMetadataPartitions")
+      s"remoteLogMetadata-partition distribution expected: $metadataPartitions, actual: $actualMetadataPartitions")
   }
 
   override def describe(output: PrintStream): Unit = {
-    output.println(s"expect-user-topic-mapped-to-metadata-partition topic: $topic metadata-partitions: $metadataPartitions")
+    output.println(s"expect-user-topic-mapped-to-remoteLogMetadata-partition topic: $topic remoteLogMetadata-partitions: $metadataPartitions")
   }
 }
 

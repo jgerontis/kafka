@@ -93,8 +93,8 @@
             Please use <code>listeners</code> instead.</li>
     </ul>
     <li> The <code>Producer#sendOffsetsToTransaction(Map offsets, String consumerGroupId)</code> method has been deprecated. Please use
-        <code>Producer#sendOffsetsToTransaction(Map offsets, ConsumerGroupMetadata metadata)</code> instead, where the <code>ConsumerGroupMetadata</code>
-        can be retrieved via <code>KafkaConsumer#groupMetadata()</code> for stronger semantics. Note that the full set of consumer group metadata is only
+        <code>Producer#sendOffsetsToTransaction(Map offsets, ConsumerGroupMetadata remoteLogMetadata)</code> instead, where the <code>ConsumerGroupMetadata</code>
+        can be retrieved via <code>KafkaConsumer#groupMetadata()</code> for stronger semantics. Note that the full set of consumer group remoteLogMetadata is only
         understood by brokers or version 2.5 or higher, so you must upgrade your kafka cluster to get the stronger semantics. Otherwise, you can just pass
         in <code>new ConsumerGroupMetadata(consumerGroupId)</code> to work with older brokers. See <a href="https://cwiki.apache.org/confluence/x/zJONCg">KIP-732</a> for more details.
     </li>
@@ -508,7 +508,7 @@
         To be more concrete, previously when a batch of records were sent as part of a single request to the broker and one or more of the records failed
         the validation due to various causes (mismatch magic bytes, crc checksum errors, null key for log compacted topics, etc), the whole batch would be rejected
         with the same and misleading <code>CORRUPT_MESSAGE</code>, and the caller of the producer client would see the corresponding exception from either
-        the future object of <code>RecordMetadata</code> returned from the <code>send</code> call as well as in the <code>Callback#onCompletion(RecordMetadata metadata, Exception exception)</code>
+        the future object of <code>RecordMetadata</code> returned from the <code>send</code> call as well as in the <code>Callback#onCompletion(RecordMetadata remoteLogMetadata, Exception exception)</code>
         Now with the new error code and improved error messages of the exception, producer callers would be better informed about the root cause why their sent records were failed.
     </li>
     <li>We are introducing incremental cooperative rebalancing to the clients' group protocol, which allows consumers to keep all of their assigned partitions during a rebalance
@@ -1242,7 +1242,7 @@
 <ul>
     <li>Unclean leader election is now disabled by default. The new default favors durability over availability. Users who wish to
         to retain the previous behavior should set the broker config <code>unclean.leader.election.enable</code> to <code>true</code>.</li>
-    <li>Producer configs <code>block.on.buffer.full</code>, <code>metadata.fetch.timeout.ms</code> and <code>timeout.ms</code> have been
+    <li>Producer configs <code>block.on.buffer.full</code>, <code>remoteLogMetadata.fetch.timeout.ms</code> and <code>timeout.ms</code> have been
         removed. They were initially deprecated in Kafka 0.9.0.0.</li>
     <li>The <code>offsets.topic.replication.factor</code> broker config is now enforced upon auto topic creation. Internal
         auto topic creation will fail with a GROUP_COORDINATOR_NOT_AVAILABLE error until the cluster size meets this
@@ -1272,7 +1272,7 @@
         During development and testing it might be desirable to set this to 0 in order to not delay test execution time.
     </li>
     <li><code>org.apache.kafka.common.Cluster#partitionsForTopic</code>, <code>partitionsForNode</code> and <code>availablePartitionsForTopic</code> methods
-        will return an empty list instead of <code>null</code> (which is considered a bad practice) in case the metadata for the required topic does not exist.
+        will return an empty list instead of <code>null</code> (which is considered a bad practice) in case the remoteLogMetadata for the required topic does not exist.
     </li>
     <li>Streams API configuration parameters <code>timestamp.extractor</code>, <code>key.serde</code>, and <code>value.serde</code> were deprecated and
         replaced by <code>default.timestamp.extractor</code>, <code>default.key.serde</code>, and <code>default.value.serde</code>, respectively.
@@ -1716,7 +1716,7 @@ work with 0.10.0.x brokers. Therefore, 0.9.0.0 clients should be upgraded to 0.9
     <li> Altering topic configuration from the kafka-topics.sh script (kafka.admin.TopicCommand) has been deprecated. Going forward, please use the kafka-configs.sh script (kafka.admin.ConfigCommand) for this functionality. </li>
     <li> The kafka-consumer-offset-checker.sh (kafka.tools.ConsumerOffsetChecker) has been deprecated. Going forward, please use kafka-consumer-groups.sh (kafka.admin.ConsumerGroupCommand) for this functionality. </li>
     <li> The kafka.tools.ProducerPerformance class has been deprecated. Going forward, please use org.apache.kafka.tools.ProducerPerformance for this functionality (kafka-producer-perf-test.sh will also be changed to use the new class). </li>
-    <li> The producer config block.on.buffer.full has been deprecated and will be removed in future release. Currently its default value has been changed to false. The KafkaProducer will no longer throw BufferExhaustedException but instead will use max.block.ms value to block, after which it will throw a TimeoutException. If block.on.buffer.full property is set to true explicitly, it will set the max.block.ms to Long.MAX_VALUE and metadata.fetch.timeout.ms will not be honoured</li>
+    <li> The producer config block.on.buffer.full has been deprecated and will be removed in future release. Currently its default value has been changed to false. The KafkaProducer will no longer throw BufferExhaustedException but instead will use max.block.ms value to block, after which it will throw a TimeoutException. If block.on.buffer.full property is set to true explicitly, it will set the max.block.ms to Long.MAX_VALUE and remoteLogMetadata.fetch.timeout.ms will not be honoured</li>
 </ul>
 
 <h4><a id="upgrade_82" href="#upgrade_82">Upgrading from 0.8.1 to 0.8.2</a></h4>

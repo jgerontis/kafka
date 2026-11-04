@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package kafka.server.metadata;
+package kafka.server.remoteLogMetadata;
 
 import java.util
 import java.util.Properties

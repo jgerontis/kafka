@@ -64,7 +64,7 @@ abstract class BaseConsumerTest extends AbstractConsumerTest {
     awaitRebalance(consumer, listener)
     assertEquals(1, listener.callsToAssigned)
 
-    // get metadata for the topic
+    // get remoteLogMetadata for the topic
     var parts: Seq[PartitionInfo] = null
     while (parts == null)
       parts = consumer.partitionsFor(Topic.GROUP_METADATA_TOPIC_NAME).asScala

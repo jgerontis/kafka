@@ -143,10 +143,10 @@ private[log] class ProducerStateEntry(val producerId: Long,
       batchWithSequenceRange(batch.baseSequence, batch.lastSequence)
   }
 
-  // Return the batch metadata of the cached batch having the exact sequence range, if any.
+  // Return the batch remoteLogMetadata of the cached batch having the exact sequence range, if any.
   def batchWithSequenceRange(firstSeq: Int, lastSeq: Int): Option[BatchMetadata] = {
-    val duplicate = batchMetadata.filter { metadata =>
-      firstSeq == metadata.firstSeq && lastSeq == metadata.lastSeq
+    val duplicate = batchMetadata.filter { remoteLogMetadata =>
+      firstSeq == remoteLogMetadata.firstSeq && lastSeq == remoteLogMetadata.lastSeq
     }
     duplicate.headOption
   }
@@ -165,11 +165,11 @@ private[log] class ProducerStateEntry(val producerId: Long,
 /**
  * This class is used to validate the records appended by a given producer before they are written to the log.
  * It is initialized with the producer's state after the last successful append, and transitively validates the
- * sequence numbers and epochs of each new record. Additionally, this class accumulates transaction metadata
+ * sequence numbers and epochs of each new record. Additionally, this class accumulates transaction remoteLogMetadata
  * as the incoming records are validated.
  *
  * @param producerId The id of the producer appending to the log
- * @param currentEntry  The current entry associated with the producer id which contains metadata for a fixed number of
+ * @param currentEntry  The current entry associated with the producer id which contains remoteLogMetadata for a fixed number of
  *                      the most recent appends made by the producer. Validation of the first incoming append will
  *                      be made against the latest append in the current entry. New appends will replace older appends
  *                      in the current entry so that the space overhead is constant.
@@ -465,7 +465,7 @@ object ProducerStateManager {
 }
 
 /**
- * Maintains a mapping from ProducerIds to metadata about the last appended entries (e.g.
+ * Maintains a mapping from ProducerIds to remoteLogMetadata about the last appended entries (e.g.
  * epoch, sequence number, last offset, etc.)
  *
  * The sequence number is the last number successfully appended to the partition for the given identifier.
@@ -841,7 +841,7 @@ class ProducerStateManager(val topicPartition: TopicPartition,
   }
 
   /**
-   * Removes the producer state snapshot file metadata corresponding to the provided offset if it exists from this
+   * Removes the producer state snapshot file remoteLogMetadata corresponding to the provided offset if it exists from this
    * ProducerStateManager, and deletes the backing snapshot file.
    */
   private def removeAndDeleteSnapshot(snapshotOffset: Long): Unit = {
@@ -849,7 +849,7 @@ class ProducerStateManager(val topicPartition: TopicPartition,
   }
 
   /**
-   * Removes the producer state snapshot file metadata corresponding to the provided offset if it exists from this
+   * Removes the producer state snapshot file remoteLogMetadata corresponding to the provided offset if it exists from this
    * ProducerStateManager, and renames the backing snapshot file to have the Log.DeletionSuffix.
    *
    * Note: This method is safe to use with async deletes. If a race occurs and the snapshot file

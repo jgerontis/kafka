@@ -28,7 +28,7 @@ import org.apache.kafka.common.network.ListenerName
 import org.apache.kafka.common.protocol.ApiKeys
 import org.apache.kafka.common.requests.{AbstractRequest, AbstractResponse, RequestHeader, ResponseHeader}
 import org.apache.kafka.common.utils.Utils
-import org.apache.kafka.metadata.BrokerState
+import org.apache.kafka.remoteLogMetadata.BrokerState
 
 import scala.annotation.nowarn
 import scala.collection.Seq

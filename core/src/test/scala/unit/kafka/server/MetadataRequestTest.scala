@@ -25,7 +25,7 @@ import org.apache.kafka.common.errors.UnsupportedVersionException
 import org.apache.kafka.common.internals.Topic
 import org.apache.kafka.common.protocol.Errors
 import org.apache.kafka.common.requests.{MetadataRequest, MetadataResponse}
-import org.apache.kafka.metadata.BrokerState
+import org.apache.kafka.remoteLogMetadata.BrokerState
 import org.apache.kafka.test.TestUtils.isValidClusterId
 import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.api.{BeforeEach, Test}
@@ -132,7 +132,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
     assertNull(response1.errors.get(topic1))
     checkAutoCreatedTopic(topic2, response1)
 
-    // The default behavior in old versions of the metadata API is to allow topic creation, so
+    // The default behavior in old versions of the remoteLogMetadata API is to allow topic creation, so
     // protocol downgrades should happen gracefully when auto-creation is explicitly requested.
     val response2 = sendMetadataRequest(new MetadataRequest.Builder(Seq(topic3).asJava, true).build(1))
     checkAutoCreatedTopic(topic3, response2)
@@ -169,7 +169,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
     val response1 = sendMetadataRequest(new MetadataRequest.Builder(Seq(topic1, topic2).asJava, true).build)
     assertEquals(2, response1.topicMetadata.size)
 
-    val responseMap = response1.topicMetadata.asScala.map(metadata => (metadata.topic(), metadata.error)).toMap
+    val responseMap = response1.topicMetadata.asScala.map(remoteLogMetadata => (remoteLogMetadata.topic(), remoteLogMetadata.error)).toMap
 
     assertEquals(Set(topic1, topic2), responseMap.keySet)
     // The topic creation will be delayed, and the name collision error will be swallowed.
@@ -179,7 +179,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
     TestUtils.waitUntilLeaderIsElectedOrChanged(zkClient, topicCreated, 0)
     TestUtils.waitForPartitionMetadata(servers, topicCreated, 0)
 
-    // retry the metadata for the first auto created topic
+    // retry the remoteLogMetadata for the first auto created topic
     val response2 = sendMetadataRequest(new MetadataRequest.Builder(Seq(topicCreated).asJava, true).build)
     val topicMetadata1 = response2.topicMetadata.asScala.head
     assertEquals(Errors.NONE, topicMetadata1.error)
@@ -242,7 +242,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
   def testPreferredReplica(): Unit = {
     val replicaAssignment = Map(0 -> Seq(1, 2, 0), 1 -> Seq(2, 0, 1))
     createTopic("t1", replicaAssignment)
-    // Call controller and one different broker to ensure that metadata propagation works correctly
+    // Call controller and one different broker to ensure that remoteLogMetadata propagation works correctly
     val responses = Seq(
       sendMetadataRequest(new MetadataRequest.Builder(Seq("t1").asJava, true).build(), Some(controllerSocketServer)),
       sendMetadataRequest(new MetadataRequest.Builder(Seq("t1").asJava, true).build(), Some(notControllerSocketServer))
@@ -313,7 +313,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
       val activeBrokers = servers.filter(_.brokerState != BrokerState.NOT_RUNNING)
       val expectedIsr = activeBrokers.map(_.config.brokerId).toSet
 
-      // Assert that topic metadata at new brokers is updated correctly
+      // Assert that topic remoteLogMetadata at new brokers is updated correctly
       activeBrokers.foreach { broker =>
         var actualIsr = Set.empty[Int]
         TestUtils.waitUntilTrue(() => {
@@ -324,7 +324,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
             partitionMetadata.inSyncReplicaIds.asScala.map(Int.unbox).toSet
           }.getOrElse(Set.empty)
           expectedIsr == actualIsr
-        }, s"Topic metadata not updated correctly in broker $broker\n" +
+        }, s"Topic remoteLogMetadata not updated correctly in broker $broker\n" +
           s"Expected ISR: $expectedIsr \n" +
           s"Actual ISR : $actualIsr")
       }
@@ -355,7 +355,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
 
       val brokersInController = controllerMetadataResponse.get.brokers.asScala.toSeq.sortBy(_.id)
 
-      // Assert that metadata is propagated correctly
+      // Assert that remoteLogMetadata is propagated correctly
       servers.filter(_.brokerState != BrokerState.NOT_RUNNING).foreach { broker =>
         TestUtils.waitUntilTrue(() => {
           val metadataResponse = sendMetadataRequest(MetadataRequest.Builder.allTopics.build,
@@ -363,7 +363,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
           val brokers = metadataResponse.brokers.asScala.toSeq.sortBy(_.id)
           val topicMetadata = metadataResponse.topicMetadata.asScala.toSeq.sortBy(_.topic)
           brokersInController == brokers && metadataResponse.topicMetadata.asScala.toSeq.sortBy(_.topic) == topicMetadata
-        }, s"Topic metadata not updated correctly")
+        }, s"Topic remoteLogMetadata not updated correctly")
       }
     }
 

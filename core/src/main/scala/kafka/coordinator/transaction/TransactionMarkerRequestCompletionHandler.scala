@@ -61,7 +61,7 @@ class TransactionMarkerRequestCompletionHandler(brokerId: Int,
 
           case Right(None) =>
             throw new IllegalStateException(s"The coordinator still owns the transaction partition for $transactionalId, but there is " +
-              s"no metadata in the cache; this is not expected")
+              s"no remoteLogMetadata in the cache; this is not expected")
 
           case Right(Some(epochAndMetadata)) =>
             if (epochAndMetadata.coordinatorEpoch != txnMarker.coordinatorEpoch) {
@@ -115,7 +115,7 @@ class TransactionMarkerRequestCompletionHandler(brokerId: Int,
 
           case Right(None) =>
             throw new IllegalStateException(s"The coordinator still owns the transaction partition for $transactionalId, but there is " +
-              s"no metadata in the cache; this is not expected")
+              s"no remoteLogMetadata in the cache; this is not expected")
 
           case Right(Some(epochAndMetadata)) =>
             val txnMetadata = epochAndMetadata.transactionMetadata

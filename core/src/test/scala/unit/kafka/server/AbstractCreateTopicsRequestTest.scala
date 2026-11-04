@@ -99,9 +99,9 @@ abstract class AbstractCreateTopicsRequestTest extends BaseRequestTest {
 
     request.data.topics.forEach { topic =>
       def verifyMetadata(socketServer: SocketServer) = {
-        val metadata = sendMetadataRequest(
+        val remoteLogMetadata = sendMetadataRequest(
           new MetadataRequest.Builder(List(topic.name()).asJava, false).build()).topicMetadata.asScala
-        val metadataForTopic = metadata.filter(_.topic == topic.name()).head
+        val metadataForTopic = remoteLogMetadata.filter(_.topic == topic.name()).head
 
         val partitions = if (!topic.assignments().isEmpty)
           topic.assignments().size
@@ -138,10 +138,10 @@ abstract class AbstractCreateTopicsRequestTest extends BaseRequestTest {
         }
       }
 
-      // Verify controller broker has the correct metadata
+      // Verify controller broker has the correct remoteLogMetadata
       verifyMetadata(controllerSocketServer)
       if (!request.data.validateOnly) {
-        // Wait until metadata is propagated and validate non-controller broker has the correct metadata
+        // Wait until remoteLogMetadata is propagated and validate non-controller broker has the correct remoteLogMetadata
         TestUtils.waitForPartitionMetadata(servers, topic.name(), 0)
       }
       verifyMetadata(notControllerSocketServer)
@@ -176,9 +176,9 @@ abstract class AbstractCreateTopicsRequestTest extends BaseRequestTest {
 
   protected def validateTopicExists(topic: String): Unit = {
     TestUtils.waitForPartitionMetadata(servers, topic, 0)
-    val metadata = sendMetadataRequest(
+    val remoteLogMetadata = sendMetadataRequest(
       new MetadataRequest.Builder(List(topic).asJava, true).build()).topicMetadata.asScala
-    assertTrue(metadata.exists(p => p.topic.equals(topic) && p.error == Errors.NONE), "The topic should be created")
+    assertTrue(remoteLogMetadata.exists(p => p.topic.equals(topic) && p.error == Errors.NONE), "The topic should be created")
   }
 
   protected def sendCreateTopicRequest(request: CreateTopicsRequest,

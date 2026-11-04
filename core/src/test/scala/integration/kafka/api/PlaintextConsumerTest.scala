@@ -326,9 +326,9 @@ class PlaintextConsumerTest extends BaseConsumerTest {
    * Verifies that pattern subscription performs as expected.
    * The pattern matches the topics 'topic' and 'tblablac', but not 'tblablak' or 'tblab1'.
    * It is expected that the consumer is subscribed to all partitions of 'topic' and
-   * 'tblablac' after the subscription when metadata is refreshed.
+   * 'tblablac' after the subscription when remoteLogMetadata is refreshed.
    * When a new topic 'tsomec' is added afterwards, it is expected that upon the next
-   * metadata refresh the consumer becomes subscribed to this new topic and all partitions
+   * remoteLogMetadata refresh the consumer becomes subscribed to this new topic and all partitions
    * of that topic are assigned to it.
    */
   @Test
@@ -385,8 +385,8 @@ class PlaintextConsumerTest extends BaseConsumerTest {
    * The second subscription is to a pattern that matches 'foo' and a new topic 'bar'.
    * It is expected that the consumer is subscribed to all partitions of 'topic' and 'foo' after
    * the first subscription, and to all partitions of 'foo' and 'bar' after the second.
-   * The metadata refresh interval is intentionally increased to a large enough value to guarantee
-   * that it is the subscription call that triggers a metadata refresh, and not the timeout.
+   * The remoteLogMetadata refresh interval is intentionally increased to a large enough value to guarantee
+   * that it is the subscription call that triggers a remoteLogMetadata refresh, and not the timeout.
    */
   @Test
   def testSubsequentPatternSubscription(): Unit = {
@@ -435,7 +435,7 @@ class PlaintextConsumerTest extends BaseConsumerTest {
    * Verifies that pattern unsubscription performs as expected.
    * The pattern matches the topics 'topic' and 'tblablac'.
    * It is expected that the consumer is subscribed to all partitions of 'topic' and
-   * 'tblablac' after the subscription when metadata is refreshed.
+   * 'tblablac' after the subscription when remoteLogMetadata is refreshed.
    * When consumer unsubscribes from all its subscriptions, it is expected that its
    * assignments are cleared right away.
    */
@@ -480,7 +480,7 @@ class PlaintextConsumerTest extends BaseConsumerTest {
     sendAndAwaitAsyncCommit(consumer, Some(Map(tp -> asyncMetadata)))
     assertEquals(asyncMetadata, consumer.committed(Set(tp).asJava).get(tp))
 
-    // handle null metadata
+    // handle null remoteLogMetadata
     val nullMetadata = new OffsetAndMetadata(5, null)
     consumer.commitSync(Map(tp -> nullMetadata).asJava)
     assertEquals(nullMetadata, consumer.committed(Set(tp).asJava).get(tp))
@@ -1038,7 +1038,7 @@ class PlaintextConsumerTest extends BaseConsumerTest {
     // send invalid record
     assertThrows(classOf[Throwable], () => testProducer.send(null), () => "Should not allow sending a null record")
     assertEquals(1, MockProducerInterceptor.ON_ERROR_COUNT.intValue, "Interceptor should be notified about exception")
-    assertEquals(0, MockProducerInterceptor.ON_ERROR_WITH_METADATA_COUNT.intValue(), "Interceptor should not receive metadata with an exception when record is null")
+    assertEquals(0, MockProducerInterceptor.ON_ERROR_WITH_METADATA_COUNT.intValue(), "Interceptor should not receive remoteLogMetadata with an exception when record is null")
 
     // create consumer with interceptor
     this.consumerConfig.setProperty(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, "org.apache.kafka.test.MockConsumerInterceptor")

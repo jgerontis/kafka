@@ -157,8 +157,8 @@ class FeatureApis(private var opts: FeatureCommandOptions) {
    * @throws UpdateFeaturesException if at least one of the feature updates failed
    */
   def upgradeAllFeatures(): Unit = {
-    val metadata = adminClient.describeFeatures.featureMetadata.get
-    val existingFinalizedFeatures = metadata.finalizedFeatures
+    val remoteLogMetadata = adminClient.describeFeatures.featureMetadata.get
+    val existingFinalizedFeatures = remoteLogMetadata.finalizedFeatures
     val updates = supportedFeatures.features.asScala.map {
       case (feature, targetVersionRange) =>
         val existingVersionRange = existingFinalizedFeatures.get(feature)
@@ -204,8 +204,8 @@ class FeatureApis(private var opts: FeatureCommandOptions) {
    * @throws UpdateFeaturesException if at least one of the feature updates failed
    */
   def downgradeAllFeatures(): Unit = {
-    val metadata = adminClient.describeFeatures.featureMetadata.get
-    val existingFinalizedFeatures = metadata.finalizedFeatures
+    val remoteLogMetadata = adminClient.describeFeatures.featureMetadata.get
+    val existingFinalizedFeatures = remoteLogMetadata.finalizedFeatures
     val supportedFeaturesMap = supportedFeatures.features
     val updates = existingFinalizedFeatures.asScala.map {
       case (feature, existingVersionRange) =>

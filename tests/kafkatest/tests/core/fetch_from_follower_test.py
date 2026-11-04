@@ -94,7 +94,7 @@ class FetchFromFollowerTest(ProduceConsumeValidateTest):
         self.consumer = ConsoleConsumer(self.test_context, self.num_consumers, self.kafka, self.topic,
                                         client_id="console-consumer", group_id="test-consumer-group-1",
                                         consumer_timeout_ms=60000, message_validator=is_int,
-                                        consumer_properties={"client.rack": non_leader_rack, "metadata.max.age.ms": self.METADATA_MAX_AGE_MS})
+                                        consumer_properties={"client.rack": non_leader_rack, "remoteLogMetadata.max.age.ms": self.METADATA_MAX_AGE_MS})
 
         # Start up and let some data get produced
         self.start_producer_and_consumer()
@@ -109,7 +109,7 @@ class FetchFromFollowerTest(ProduceConsumeValidateTest):
         self.jmx_tool.jmx_attributes = [read_replica_attribute]
         self.jmx_tool.start_jmx_tool(consumer_idx, consumer_node)
 
-        # Wait for at least one interval of "metadata.max.age.ms"
+        # Wait for at least one interval of "remoteLogMetadata.max.age.ms"
         time.sleep(self.METADATA_MAX_AGE_MS * 2. / 1000)
 
         # Read the JMX output

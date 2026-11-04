@@ -86,7 +86,7 @@ class DefaultAutoTopicCreationManager(
    * @param metadataRequestContext defined when creating topics on behalf of the client. The goal here is to preserve
    *                               original client principal for auditing, thus needing to wrap a plain CreateTopicsRequest
    *                               inside Envelope to send to the controller when forwarding is enabled.
-   * @return auto created topic metadata responses
+   * @return auto created topic remoteLogMetadata responses
    */
   override def createTopics(
     topics: Set[String],
@@ -112,7 +112,7 @@ class DefaultAutoTopicCreationManager(
   ): Seq[MetadataResponseTopic] = {
     val topicErrors = new AtomicReference[Map[String, ApiError]]()
     try {
-      // Note that we use timeout = 0 since we do not need to wait for metadata propagation
+      // Note that we use timeout = 0 since we do not need to wait for remoteLogMetadata propagation
       // and we want to get the response error immediately.
       adminManager.get.createTopics(
         timeout = 0,
@@ -131,7 +131,7 @@ class DefaultAutoTopicCreationManager(
             val error = apiError.error match {
               case Errors.TOPIC_ALREADY_EXISTS | Errors.REQUEST_TIMED_OUT =>
                 // The timeout error is expected because we set timeout=0. This
-                // nevertheless indicates that the topic metadata was created
+                // nevertheless indicates that the topic remoteLogMetadata was created
                 // successfully, so we return LEADER_NOT_AVAILABLE.
                 Errors.LEADER_NOT_AVAILABLE
               case error => error
@@ -216,7 +216,7 @@ class DefaultAutoTopicCreationManager(
         }
 
       // Borrow client information such as client id and correlation id from the original request,
-      // in order to correlate the create request with the original metadata request.
+      // in order to correlate the create request with the original remoteLogMetadata request.
       val requestHeader = new RequestHeader(ApiKeys.CREATE_TOPICS,
         requestVersion,
         context.clientId,
@@ -244,12 +244,12 @@ class DefaultAutoTopicCreationManager(
    *
    * The existing "Automatically creating topic:" log fires before the creation attempt and cannot
    * distinguish true new creations from false positives — cases where the broker triggers auto-creation
-   * because its metadata cache hasn't fully loaded yet (e.g., at pod startup), but the topic already
+   * because its remoteLogMetadata cache hasn't fully loaded yet (e.g., at pod startup), but the topic already
    * exists in the cluster. This inflates observed counts and makes it impossible to identify real usage.
    *
    */
   private def logAutoTopicCreationResults(topicErrors: Map[String, Errors]): Unit = {
-    // REQUEST_TIMED_OUT is treated as success: it means the topic metadata was written to ZooKeeper
+    // REQUEST_TIMED_OUT is treated as success: it means the topic remoteLogMetadata was written to ZooKeeper
     // but leader election did not complete within the timeout.
     val successfulCreations = mutable.Buffer.empty[String]
     val topicAlreadyExists = mutable.Buffer.empty[String]

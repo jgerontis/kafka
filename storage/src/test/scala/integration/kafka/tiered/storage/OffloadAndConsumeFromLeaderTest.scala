@@ -91,7 +91,7 @@ class OffloadAndConsumeFromLeaderTest extends TieredStorageTestHarness {
       /*
        * (A.3) Stops and restarts the broker. The purpose of this test is to a) exercise consumption
        *       from a given offset and b) verify that upon broker start, existing remote log segments
-       *       metadata are loaded by Kafka and these log segments available.
+       *       remoteLogMetadata are loaded by Kafka and these log segments available.
        *
        *       Acceptance:
        *       -----------

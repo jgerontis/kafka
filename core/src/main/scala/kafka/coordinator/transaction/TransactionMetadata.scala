@@ -180,7 +180,7 @@ private[transaction] object TransactionMetadata {
   def isEpochExhausted(producerEpoch: Short): Boolean = producerEpoch >= Short.MaxValue - 1
 }
 
-// this is a immutable object representing the target transition of the transaction metadata
+// this is a immutable object representing the target transition of the transaction remoteLogMetadata
 private[transaction] case class TxnTransitMetadata(producerId: Long,
                                                    lastProducerId: Long,
                                                    producerEpoch: Short,
@@ -247,7 +247,7 @@ private[transaction] class TransactionMetadata(val transactionalId: String,
 
   def removePartition(topicPartition: TopicPartition): Unit = {
     if (state != PrepareCommit && state != PrepareAbort)
-      throw new IllegalStateException(s"Transaction metadata's current state is $state, and its pending state is $pendingState " +
+      throw new IllegalStateException(s"Transaction remoteLogMetadata's current state is $state, and its pending state is $pendingState " +
         s"while trying to remove partitions whose txn marker has been sent, this is not expected")
 
     topicPartitions -= topicPartition
@@ -399,14 +399,14 @@ private[transaction] class TransactionMetadata(val transactionalId: String,
   }
 
   def completeTransitionTo(transitMetadata: TxnTransitMetadata): Unit = {
-    // metadata transition is valid only if all the following conditions are met:
+    // remoteLogMetadata transition is valid only if all the following conditions are met:
     //
     // 1. the new state is already indicated in the pending state.
     // 2. the epoch should be either the same value, the old value + 1, or 0 if we have a new producerId.
     // 3. the last update time is no smaller than the old value.
     // 4. the old partitions set is a subset of the new partitions set.
     //
-    // plus, we should only try to update the metadata after the corresponding log entry has been successfully
+    // plus, we should only try to update the remoteLogMetadata after the corresponding log entry has been successfully
     // written and replicated (see TransactionStateManager#appendTransactionToLog)
     //
     // if valid, transition is done via overwriting the whole object to ensure synchronization
@@ -477,10 +477,10 @@ private[transaction] class TransactionMetadata(val transactionalId: String,
 
         case Dead =>
           // The transactionalId was being expired. The completion of the operation should result in removal of the
-          // the metadata from the cache, so we should never realistically transition to the dead state.
+          // the remoteLogMetadata from the cache, so we should never realistically transition to the dead state.
           throw new IllegalStateException(s"TransactionalId $transactionalId is trying to complete a transition to " +
             s"$toState. This means that the transactionalId was being expired, and the only acceptable completion of " +
-            s"this operation is to remove the transaction metadata from the cache, not to persist the $toState in the log.")
+            s"this operation is to remove the transaction remoteLogMetadata from the cache, not to persist the $toState in the log.")
       }
 
       debug(s"TransactionalId $transactionalId complete transition from $state to $transitMetadata")
@@ -506,7 +506,7 @@ private[transaction] class TransactionMetadata(val transactionalId: String,
     fatal(s"${this.toString}'s transition to $txnTransitMetadata failed: this should not happen")
 
     throw new IllegalStateException(s"TransactionalId $transactionalId failed transition to state $txnTransitMetadata " +
-      "due to unexpected metadata")
+      "due to unexpected remoteLogMetadata")
   }
 
   def pendingTransitionInProgress: Boolean = pendingState.isDefined

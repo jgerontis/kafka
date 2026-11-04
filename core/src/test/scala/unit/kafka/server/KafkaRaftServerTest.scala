@@ -173,7 +173,7 @@ class KafkaRaftServerTest {
       writeMetaProperties(dir, MetaProperties(clusterId, nodeId))
     }
 
-    // Create the metadata dir in the data directory
+    // Create the remoteLogMetadata dir in the data directory
     Files.createDirectory(new File(dataDir, Log.logDirName(KafkaRaftServer.MetadataPartition)).toPath)
 
     val configProperties = new Properties

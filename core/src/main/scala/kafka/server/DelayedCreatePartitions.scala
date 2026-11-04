@@ -24,7 +24,7 @@ import org.apache.kafka.common.requests.ApiError
 import scala.collection._
 
 /**
-  * The create metadata maintained by the delayed create topic or create partitions operations.
+  * The create remoteLogMetadata maintained by the delayed create topic or create partitions operations.
   */
 case class CreatePartitionsMetadata(topic: String, partitions: Set[Int], error: ApiError)
 
@@ -61,8 +61,8 @@ class DelayedCreatePartitions(delayMs: Long,
   override def tryComplete() : Boolean = {
     trace(s"Trying to complete operation for $createMetadata")
 
-    val leaderlessPartitionCount = createMetadata.filter(_.error.isSuccess).foldLeft(0) { case (topicCounter, metadata) =>
-      topicCounter + missingLeaderCount(metadata.topic, metadata.partitions)
+    val leaderlessPartitionCount = createMetadata.filter(_.error.isSuccess).foldLeft(0) { case (topicCounter, remoteLogMetadata) =>
+      topicCounter + missingLeaderCount(remoteLogMetadata.topic, remoteLogMetadata.partitions)
     }
 
     if (leaderlessPartitionCount == 0) {
@@ -79,12 +79,12 @@ class DelayedCreatePartitions(delayMs: Long,
     */
   override def onComplete(): Unit = {
     trace(s"Completing operation for $createMetadata")
-    val results = createMetadata.map { metadata =>
+    val results = createMetadata.map { remoteLogMetadata =>
       // ignore topics that already have errors
-      if (metadata.error.isSuccess && missingLeaderCount(metadata.topic, metadata.partitions) > 0)
-        (metadata.topic, new ApiError(Errors.REQUEST_TIMED_OUT, null))
+      if (remoteLogMetadata.error.isSuccess && missingLeaderCount(remoteLogMetadata.topic, remoteLogMetadata.partitions) > 0)
+        (remoteLogMetadata.topic, new ApiError(Errors.REQUEST_TIMED_OUT, null))
       else
-        (metadata.topic, metadata.error)
+        (remoteLogMetadata.topic, remoteLogMetadata.error)
     }.toMap
     responseCallback(results)
   }

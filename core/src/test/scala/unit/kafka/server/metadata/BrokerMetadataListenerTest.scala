@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package kafka.server.metadata
+package kafka.server.remoteLogMetadata
 
 import java.util
 import java.util.concurrent.atomic.AtomicReference
 import java.util.{Collections, Optional}
 
 import org.apache.kafka.common.{Endpoint, Uuid}
-import org.apache.kafka.common.metadata.{PartitionChangeRecord, PartitionRecord, RegisterBrokerRecord, TopicRecord}
+import org.apache.kafka.common.remoteLogMetadata.{PartitionChangeRecord, PartitionRecord, RegisterBrokerRecord, TopicRecord}
 import org.apache.kafka.common.utils.Time
 import org.apache.kafka.image.{MetadataDelta, MetadataImage}
-import org.apache.kafka.metadata.{BrokerRegistration, RecordTestUtils, VersionRange}
+import org.apache.kafka.remoteLogMetadata.{BrokerRegistration, RecordTestUtils, VersionRange}
 import org.apache.kafka.server.common.ApiMessageAndVersion
 import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
 import org.junit.jupiter.api.Test

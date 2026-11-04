@@ -117,7 +117,7 @@ class PlaintextProducerSendTest extends BaseProducerSendTest {
   }
 
   // Test that producer with max.block.ms=0 can be used to send in non-blocking mode
-  // where requests are failed immediately without blocking if metadata is not available
+  // where requests are failed immediately without blocking if remoteLogMetadata is not available
   // or buffer is full.
   @Test
   def testNonBlockingProducer(): Unit = {
@@ -158,18 +158,18 @@ class PlaintextProducerSendTest extends BaseProducerSendTest {
       assertEquals(classOf[BufferExhaustedException], assertThrows(classOf[ExecutionException], () => future.get).getCause.getClass)
     }
 
-    // Topic metadata not available, send should fail without blocking
+    // Topic remoteLogMetadata not available, send should fail without blocking
     val producer = createProducer(brokerList = brokerList, maxBlockMs = 0)
     verifyMetadataNotAvailable(send(producer))
 
-    // Test that send starts succeeding once metadata is available
+    // Test that send starts succeeding once remoteLogMetadata is available
     val future = sendUntilQueued(producer)
     verifySendSuccess(future)
 
     // Verify that send fails immediately without blocking when there is no space left in the buffer
     val producer2 = createProducer(brokerList = brokerList, maxBlockMs = 0,
                                    lingerMs = 15000, batchSize = 1100, bufferSize = 1500)
-    val future2 = sendUntilQueued(producer2) // wait until metadata is available and one record is queued
+    val future2 = sendUntilQueued(producer2) // wait until remoteLogMetadata is available and one record is queued
     verifyBufferExhausted(send(producer2))       // should fail send since buffer is full
     verifySendSuccess(future2)               // previous batch should be completed and sent now
   }

@@ -422,7 +422,7 @@ object TestRaftServer extends Logging {
       .ofType(classOf[String])
 
     val throughputOpt = parser.accepts("throughput",
-      "The number of records per second the leader will write to the metadata topic")
+      "The number of records per second the leader will write to the remoteLogMetadata topic")
       .withRequiredArg
       .describedAs("records/sec")
       .ofType(classOf[Int])

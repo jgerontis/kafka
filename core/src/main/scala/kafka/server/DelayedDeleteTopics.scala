@@ -22,7 +22,7 @@ import org.apache.kafka.common.protocol.Errors
 import scala.collection._
 
 /**
-  * The delete metadata maintained by the delayed delete operation
+  * The delete remoteLogMetadata maintained by the delayed delete operation
   */
 case class DeleteTopicMetadata(topic: String, error: Errors)
 
@@ -51,7 +51,7 @@ class DelayedDeleteTopics(delayMs: Long,
     trace(s"Trying to complete operation for $deleteMetadata")
 
     // Ignore topics that already have errors
-    val existingTopics = deleteMetadata.count { metadata => metadata.error == Errors.NONE && topicExists(metadata.topic) }
+    val existingTopics = deleteMetadata.count { remoteLogMetadata => remoteLogMetadata.error == Errors.NONE && topicExists(remoteLogMetadata.topic) }
 
     if (existingTopics == 0) {
       trace("All topics have been deleted or have errors, completing the delayed operation")
@@ -67,12 +67,12 @@ class DelayedDeleteTopics(delayMs: Long,
     */
   override def onComplete(): Unit = {
     trace(s"Completing operation for $deleteMetadata")
-    val results = deleteMetadata.map { metadata =>
+    val results = deleteMetadata.map { remoteLogMetadata =>
       // ignore topics that already have errors
-      if (metadata.error == Errors.NONE && topicExists(metadata.topic))
-        (metadata.topic, Errors.REQUEST_TIMED_OUT)
+      if (remoteLogMetadata.error == Errors.NONE && topicExists(remoteLogMetadata.topic))
+        (remoteLogMetadata.topic, Errors.REQUEST_TIMED_OUT)
       else
-        (metadata.topic, metadata.error)
+        (remoteLogMetadata.topic, remoteLogMetadata.error)
     }.toMap
     responseCallback(results)
   }

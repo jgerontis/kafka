@@ -20,7 +20,7 @@ import kafka.api.ApiVersion
 import kafka.log.{CleanerConfig, LogConfig, LogManager}
 import kafka.server.{Defaults, MetadataCache, TransferLeaderManager}
 import kafka.server.checkpoints.OffsetCheckpoints
-import kafka.server.metadata.MockConfigRepository
+import kafka.server.remoteLogMetadata.MockConfigRepository
 import kafka.utils.TestUtils.{MockAlterIsrManager, MockIsrChangeListener}
 import kafka.utils.{MockTime, TestUtils}
 import org.apache.kafka.common.TopicPartition

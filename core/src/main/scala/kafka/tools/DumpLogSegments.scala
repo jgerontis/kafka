@@ -26,11 +26,11 @@ import kafka.log._
 import kafka.serializer.Decoder
 import kafka.utils._
 import kafka.utils.Implicits._
-import org.apache.kafka.common.metadata.{MetadataJsonConverters, MetadataRecordType}
+import org.apache.kafka.common.remoteLogMetadata.{MetadataJsonConverters, MetadataRecordType}
 import org.apache.kafka.common.protocol.ByteBufferAccessor
 import org.apache.kafka.common.record._
 import org.apache.kafka.common.utils.Utils
-import org.apache.kafka.metadata.MetadataRecordSerde
+import org.apache.kafka.remoteLogMetadata.MetadataRecordSerde
 
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable
@@ -103,9 +103,9 @@ object DumpLogSegments {
       ProducerStateManager.readSnapshot(file).foreach { entry =>
         print(s"producerId: ${entry.producerId} producerEpoch: ${entry.producerEpoch} " +
           s"coordinatorEpoch: ${entry.coordinatorEpoch} currentTxnFirstOffset: ${entry.currentTxnFirstOffset} ")
-        entry.batchMetadata.headOption.foreach { metadata =>
-          print(s"firstSequence: ${metadata.firstSeq} lastSequence: ${metadata.lastSeq} " +
-            s"lastOffset: ${metadata.lastOffset} offsetDelta: ${metadata.offsetDelta} timestamp: ${metadata.timestamp}")
+        entry.batchMetadata.headOption.foreach { remoteLogMetadata =>
+          print(s"firstSequence: ${remoteLogMetadata.firstSeq} lastSequence: ${remoteLogMetadata.lastSeq} " +
+            s"lastOffset: ${remoteLogMetadata.lastOffset} offsetDelta: ${remoteLogMetadata.offsetDelta} timestamp: ${remoteLogMetadata.timestamp}")
         }
         println()
       }
@@ -412,7 +412,7 @@ object DumpLogSegments {
           s"Error at ${record.offset}, skipping. ${e.getMessage}"
         }
       }
-      // No keys for metadata records
+      // No keys for remoteLogMetadata records
       (None, Some(output))
     }
   }
@@ -443,9 +443,9 @@ object DumpLogSegments {
     val offsetsOpt = parser.accepts("offsets-decoder", "if set, log data will be parsed as offset data from the " +
       "__consumer_offsets topic.")
     val transactionLogOpt = parser.accepts("transaction-log-decoder", "if set, log data will be parsed as " +
-      "transaction metadata from the __transaction_state topic.")
-    val clusterMetadataOpt = parser.accepts("cluster-metadata-decoder", "if set, log data will be parsed as cluster metadata records.")
-    val skipRecordMetadataOpt = parser.accepts("skip-record-metadata", "whether to skip printing metadata for each record.")
+      "transaction remoteLogMetadata from the __transaction_state topic.")
+    val clusterMetadataOpt = parser.accepts("cluster-remoteLogMetadata-decoder", "if set, log data will be parsed as cluster remoteLogMetadata records.")
+    val skipRecordMetadataOpt = parser.accepts("skip-record-remoteLogMetadata", "whether to skip printing remoteLogMetadata for each record.")
     options = parser.parse(args : _*)
 
     def messageParser: MessageParser[_, _] =

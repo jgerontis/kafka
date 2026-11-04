@@ -20,7 +20,7 @@ package kafka.server
 import kafka.utils.TestUtils
 import kafka.zk.ZooKeeperTestHarness
 import org.apache.kafka.common.KafkaException
-import org.apache.kafka.metadata.BrokerState
+import org.apache.kafka.remoteLogMetadata.BrokerState
 import org.apache.zookeeper.KeeperException.NodeExistsException
 import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.api.{AfterEach, Test}

@@ -439,15 +439,15 @@ object KafkaConfig {
   val BrokerHeartbeatIntervalMsProp = "broker.heartbeat.interval.ms"
   val BrokerSessionTimeoutMsProp = "broker.session.timeout.ms"
   val NodeIdProp = "node.id"
-  val MetadataLogDirProp = "metadata.log.dir"
-  val MetadataSnapshotMaxNewRecordBytesProp = "metadata.log.max.record.bytes.between.snapshots"
+  val MetadataLogDirProp = "remoteLogMetadata.log.dir"
+  val MetadataSnapshotMaxNewRecordBytesProp = "remoteLogMetadata.log.max.record.bytes.between.snapshots"
   val ControllerListenerNamesProp = "controller.listener.names"
   val SaslMechanismControllerProtocolProp = "sasl.mechanism.controller.protocol"
-  val MetadataLogSegmentMinBytesProp = "metadata.log.segment.min.bytes"
-  val MetadataLogSegmentBytesProp = "metadata.log.segment.bytes"
-  val MetadataLogSegmentMillisProp = "metadata.log.segment.ms"
-  val MetadataMaxRetentionBytesProp = "metadata.max.retention.bytes"
-  val MetadataMaxRetentionMillisProp = "metadata.max.retention.ms"
+  val MetadataLogSegmentMinBytesProp = "remoteLogMetadata.log.segment.min.bytes"
+  val MetadataLogSegmentBytesProp = "remoteLogMetadata.log.segment.bytes"
+  val MetadataLogSegmentMillisProp = "remoteLogMetadata.log.segment.ms"
+  val MetadataMaxRetentionBytesProp = "remoteLogMetadata.max.retention.bytes"
+  val MetadataMaxRetentionMillisProp = "remoteLogMetadata.max.retention.ms"
   val QuorumVotersProp = RaftConfig.QUORUM_VOTERS_CONFIG
 
   val HeapDumpFolderProp = "heap.dump.folder"
@@ -457,7 +457,7 @@ object KafkaConfig {
   val LiMinPreferredControllerCountProp = "li.min.preferred.controller.count"
   val LiAsyncFetcherEnableProp = "li.async.fetcher.enable"
   val LiCombinedControlRequestEnableProp = "li.combined.control.request.enable"
-  val LiUpdateMetadataDelayMsProp = "li.update.metadata.delay.ms"
+  val LiUpdateMetadataDelayMsProp = "li.update.remoteLogMetadata.delay.ms"
   val LiDropFetchFollowerEnableProp = "li.stop.replication.enable"
   val LiDenyAlterIsrProp = "li.deny.alter.isr"
   val LiNumControllerInitThreadsProp = "li.num.controller.init.threads"
@@ -598,7 +598,7 @@ object KafkaConfig {
   val GroupInitialRebalanceDelayMsProp = "group.initial.rebalance.delay.ms"
   val GroupMaxSizeProp = "group.max.size"
   /** ********* Offset management configuration ***********/
-  val OffsetMetadataMaxSizeProp = "offset.metadata.max.bytes"
+  val OffsetMetadataMaxSizeProp = "offset.remoteLogMetadata.max.bytes"
   val OffsetsLoadBufferSizeProp = "offsets.load.buffer.size"
   val OffsetsTopicReplicationFactorProp = "offsets.topic.replication.factor"
   val OffsetsTopicPartitionsProp = "offsets.topic.num.partitions"
@@ -792,19 +792,19 @@ object KafkaConfig {
   val BrokerSessionTimeoutMsDoc = "The length of time in milliseconds that a broker lease lasts if no heartbeats are made. Used when running in KRaft mode."
   val NodeIdDoc = "The node ID associated with the roles this process is playing when `process.roles` is non-empty. " +
     "This is required configuration when running in KRaft mode."
-  val MetadataLogDirDoc = "This configuration determines where we put the metadata log for clusters in KRaft mode. " +
-    "If it is not set, the metadata log is placed in the first log directory from log.dirs."
+  val MetadataLogDirDoc = "This configuration determines where we put the remoteLogMetadata log for clusters in KRaft mode. " +
+    "If it is not set, the remoteLogMetadata log is placed in the first log directory from log.dirs."
   val MetadataSnapshotMaxNewRecordBytesDoc = "This is the maximum number of bytes in the log between the latest snapshot and the high-watermark needed before generating a new snapshot."
   val ControllerListenerNamesDoc = "A comma-separated list of the names of the listeners used by the controller. This is required " +
     "if running in KRaft mode. The ZK-based controller will not use this configuration."
   val SaslMechanismControllerProtocolDoc = "SASL mechanism used for communication with controllers. Default is GSSAPI."
-  val MetadataLogSegmentBytesDoc = "The maximum size of a single metadata log file."
-  val MetadataLogSegmentMinBytesDoc = "Override the minimum size for a single metadata log file. This should be used for testing only."
+  val MetadataLogSegmentBytesDoc = "The maximum size of a single remoteLogMetadata log file."
+  val MetadataLogSegmentMinBytesDoc = "Override the minimum size for a single remoteLogMetadata log file. This should be used for testing only."
 
-  val MetadataLogSegmentMillisDoc = "The maximum time before a new metadata log file is rolled out (in milliseconds)."
-  val MetadataMaxRetentionBytesDoc = "The maximum combined size of the metadata log and snapshots before deleting old " +
+  val MetadataLogSegmentMillisDoc = "The maximum time before a new remoteLogMetadata log file is rolled out (in milliseconds)."
+  val MetadataMaxRetentionBytesDoc = "The maximum combined size of the remoteLogMetadata log and snapshots before deleting old " +
     "snapshots and log files. Since at least one snapshot must exist before any logs can be deleted, this is a soft limit."
-  val MetadataMaxRetentionMillisDoc = "The number of milliseconds to keep a metadata log file or snapshot before " +
+  val MetadataMaxRetentionMillisDoc = "The number of milliseconds to keep a remoteLogMetadata log file or snapshot before " +
     "deleting it. Since at least one snapshot must exist before any logs can be deleted, this is a soft limit."
 
   val HeapDumpFolderDoc = "The Folder under which heap dumps will be written by the watchdog"
@@ -1042,7 +1042,7 @@ object KafkaConfig {
   val GroupInitialRebalanceDelayMsDoc = "The amount of time the group coordinator will wait for more consumers to join a new group before performing the first rebalance. A longer delay means potentially fewer rebalances, but increases the time until processing begins."
   val GroupMaxSizeDoc = "The maximum number of consumers that a single consumer group can accommodate."
   /** ********* Offset management configuration ***********/
-  val OffsetMetadataMaxSizeDoc = "The maximum size for a metadata entry associated with an offset commit"
+  val OffsetMetadataMaxSizeDoc = "The maximum size for a remoteLogMetadata entry associated with an offset commit"
   val OffsetsLoadBufferSizeDoc = "Batch size for reading from the offsets segments when loading offsets into the cache (soft-limit, overridden if records are too large)."
   val OffsetsTopicReplicationFactorDoc = "The replication factor for the offsets topic (set higher to ensure availability). " +
   "Internal topic creation will fail until the cluster size meets this replication factor requirement."
@@ -2233,7 +2233,7 @@ class KafkaConfig(val props: java.util.Map[_, _], doLog: Boolean, dynamicConfigO
         require(brokerId >= 0, "broker.id must be greater than or equal to 0")
       }
     } else {
-      // KRaft-based metadata quorum
+      // KRaft-based remoteLogMetadata quorum
       if (nodeId < 0) {
         throw new ConfigException(s"Missing configuration `${KafkaConfig.NodeIdProp}` which is required " +
           s"when `process.roles` is defined (i.e. when running in KRaft mode).")

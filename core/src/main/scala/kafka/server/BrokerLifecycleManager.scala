@@ -26,7 +26,7 @@ import org.apache.kafka.common.message.BrokerRegistrationRequestData.ListenerCol
 import org.apache.kafka.common.message.{BrokerHeartbeatRequestData, BrokerRegistrationRequestData}
 import org.apache.kafka.common.protocol.Errors
 import org.apache.kafka.common.requests.{BrokerHeartbeatRequest, BrokerHeartbeatResponse, BrokerRegistrationRequest, BrokerRegistrationResponse}
-import org.apache.kafka.metadata.{BrokerState, VersionRange}
+import org.apache.kafka.remoteLogMetadata.{BrokerState, VersionRange}
 import org.apache.kafka.queue.EventQueue.DeadlineFunction
 import org.apache.kafka.common.utils.{ExponentialBackoff, LogContext, Time}
 import org.apache.kafka.queue.{EventQueue, KafkaEventQueue}
@@ -93,7 +93,7 @@ class BrokerLifecycleManager(val config: KafkaConfig,
 
   /**
    * A future which is completed just as soon as the broker has caught up with the latest
-   * metadata offset for the first time.
+   * remoteLogMetadata offset for the first time.
    */
   val initialCatchUpFuture = new CompletableFuture[Void]()
 
@@ -115,7 +115,7 @@ class BrokerLifecycleManager(val config: KafkaConfig,
   @volatile private var _state = BrokerState.NOT_RUNNING
 
   /**
-   * A thread-safe callback function which gives this manager the current highest metadata
+   * A thread-safe callback function which gives this manager the current highest remoteLogMetadata
    * offset.  This variable can only be read or written from the event queue thread.
    */
   private var _highestMetadataOffsetProvider: () => Long = _
@@ -176,7 +176,7 @@ class BrokerLifecycleManager(val config: KafkaConfig,
   /**
    * Start the BrokerLifecycleManager.
    *
-   * @param highestMetadataOffsetProvider Provides the current highest metadata offset.
+   * @param highestMetadataOffsetProvider Provides the current highest remoteLogMetadata offset.
    * @param channelManager                The brokerToControllerChannelManager to use.
    * @param clusterId                     The cluster ID.
    */
@@ -376,7 +376,7 @@ class BrokerLifecycleManager(val config: KafkaConfig,
                 _state = BrokerState.RECOVERY
                 initialCatchUpFuture.complete(null)
               } else {
-                debug(s"The broker is STARTING. Still waiting to catch up with cluster metadata.")
+                debug(s"The broker is STARTING. Still waiting to catch up with cluster remoteLogMetadata.")
               }
               // Schedule the heartbeat after only 10 ms so that in the case where
               // there is no recovery work to be done, we start up a bit quicker.

@@ -34,7 +34,7 @@ import org.apache.kafka.common.protocol.Errors
 import org.apache.kafka.common.requests.{AbstractRequest, BrokerHeartbeatRequest, BrokerHeartbeatResponse, BrokerRegistrationResponse}
 import org.apache.kafka.common.security.auth.SecurityProtocol
 import org.apache.kafka.common.utils.LogContext
-import org.apache.kafka.metadata.BrokerState
+import org.apache.kafka.remoteLogMetadata.BrokerState
 import org.junit.jupiter.api.{Test, Timeout}
 import org.junit.jupiter.api.Assertions._
 
@@ -69,8 +69,8 @@ class BrokerLifecycleManagerTest {
     val config = new KafkaConfig(properties)
     val time = new MockTime(1, 1)
     val highestMetadataOffset = new AtomicLong(0)
-    val metadata = new Metadata(1000, 1000, new LogContext(), new ClusterResourceListeners())
-    val mockClient = new MockClient(time, metadata)
+    val remoteLogMetadata = new Metadata(1000, 1000, new LogContext(), new ClusterResourceListeners())
+    val mockClient = new MockClient(time, remoteLogMetadata)
     val controllerNodeProvider = new SimpleControllerNodeProvider()
     val nodeApiVersions = new NodeApiVersions(Seq(BROKER_REGISTRATION, BROKER_HEARTBEAT).map {
       apiKey => new ApiVersion().setApiKey(apiKey.id).

@@ -101,7 +101,7 @@ abstract class BaseProducerSendTest extends KafkaServerTestHarness {
    * testSendOffset checks the basic send API behavior
    *
    * 1. Send with null key/value/partition-id should be accepted; send with null topic should be rejected.
-   * 2. Last message of the non-blocking send should return the correct offset metadata
+   * 2. Last message of the non-blocking send should return the correct offset remoteLogMetadata
    */
   @Test
   def testSendOffset(): Unit = {
@@ -111,17 +111,17 @@ abstract class BaseProducerSendTest extends KafkaServerTestHarness {
     object callback extends Callback {
       var offset = 0L
 
-      def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+      def onCompletion(remoteLogMetadata: RecordMetadata, exception: Exception): Unit = {
         if (exception == null) {
-          assertEquals(offset, metadata.offset())
-          assertEquals(topic, metadata.topic())
-          assertEquals(partition, metadata.partition())
+          assertEquals(offset, remoteLogMetadata.offset())
+          assertEquals(topic, remoteLogMetadata.topic())
+          assertEquals(partition, remoteLogMetadata.partition())
           offset match {
-            case 0 => assertEquals(metadata.serializedKeySize + metadata.serializedValueSize,
+            case 0 => assertEquals(remoteLogMetadata.serializedKeySize + remoteLogMetadata.serializedValueSize,
               "key".getBytes(StandardCharsets.UTF_8).length + "value".getBytes(StandardCharsets.UTF_8).length)
-            case 1 => assertEquals(metadata.serializedKeySize(), "key".getBytes(StandardCharsets.UTF_8).length)
-            case 2 => assertEquals(metadata.serializedValueSize, "value".getBytes(StandardCharsets.UTF_8).length)
-            case _ => assertTrue(metadata.serializedValueSize > 0)
+            case 1 => assertEquals(remoteLogMetadata.serializedKeySize(), "key".getBytes(StandardCharsets.UTF_8).length)
+            case 2 => assertEquals(remoteLogMetadata.serializedValueSize, "value".getBytes(StandardCharsets.UTF_8).length)
+            case _ => assertTrue(remoteLogMetadata.serializedValueSize > 0)
           }
           offset += 1
         } else {
@@ -215,15 +215,15 @@ abstract class BaseProducerSendTest extends KafkaServerTestHarness {
       var offset = 0L
       var timestampDiff = 1L
 
-      def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+      def onCompletion(remoteLogMetadata: RecordMetadata, exception: Exception): Unit = {
         if (exception == null) {
-          assertEquals(offset, metadata.offset)
-          assertEquals(topic, metadata.topic)
+          assertEquals(offset, remoteLogMetadata.offset)
+          assertEquals(topic, remoteLogMetadata.topic)
           if (timestampType == TimestampType.CREATE_TIME)
-            assertEquals(baseTimestamp + timestampDiff, metadata.timestamp)
+            assertEquals(baseTimestamp + timestampDiff, remoteLogMetadata.timestamp)
           else
-            assertTrue(metadata.timestamp >= startTime && metadata.timestamp <= System.currentTimeMillis())
-          assertEquals(partition, metadata.partition)
+            assertTrue(remoteLogMetadata.timestamp >= startTime && remoteLogMetadata.timestamp <= System.currentTimeMillis())
+          assertEquals(partition, remoteLogMetadata.partition)
           offset += 1
           timestampDiff += 1
         } else {
@@ -263,7 +263,7 @@ abstract class BaseProducerSendTest extends KafkaServerTestHarness {
   /**
    * testClose checks the closing behavior
    *
-   * After close() returns, all messages should be sent with correct returned offset metadata
+   * After close() returns, all messages should be sent with correct returned offset remoteLogMetadata
    */
   @Test
   def testClose(): Unit = {
@@ -341,7 +341,7 @@ abstract class BaseProducerSendTest extends KafkaServerTestHarness {
     * Checks partitioning behavior before and after partitions are added
     *
     * Producer will attempt to send messages to the partition specified in each record, and should
-    * succeed as long as the partition is included in the metadata.
+    * succeed as long as the partition is included in the remoteLogMetadata.
     */
   @Test
   def testSendBeforeAndAfterPartitionExpansion(): Unit = {
@@ -371,11 +371,11 @@ abstract class BaseProducerSendTest extends KafkaServerTestHarness {
       case (topicPartition, assignment) => topicPartition.partition -> assignment
     }
     adminZkClient.addPartitions(topic, existingAssignment, adminZkClient.getBrokerMetadatas(), 2)
-    // read metadata from a broker and verify the new topic partitions exist
+    // read remoteLogMetadata from a broker and verify the new topic partitions exist
     TestUtils.waitForPartitionMetadata(servers, topic, 0)
     TestUtils.waitForPartitionMetadata(servers, topic, 1)
 
-    // send records to the newly added partition after confirming that metadata have been updated.
+    // send records to the newly added partition after confirming that remoteLogMetadata have been updated.
     val futures1 = (1 to numRecords).map { i =>
       producer.send(new ProducerRecord(topic, partition1, null, ("value" + i).getBytes(StandardCharsets.UTF_8)))
     }.map(_.get(30, TimeUnit.SECONDS))
@@ -488,7 +488,7 @@ abstract class BaseProducerSendTest extends KafkaServerTestHarness {
 
     // Test closing from sender thread.
     class CloseCallback(producer: KafkaProducer[Array[Byte], Array[Byte]], sendRecords: Boolean) extends Callback {
-      override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+      override def onCompletion(remoteLogMetadata: RecordMetadata, exception: Exception): Unit = {
         // Trigger another batch in accumulator before close the producer. These messages should
         // not be sent.
         if (sendRecords)

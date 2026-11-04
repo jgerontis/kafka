@@ -81,15 +81,15 @@
 
 <p>These requests to publish or fetch data must be sent to the broker that is currently acting as the leader for a given partition. This condition is enforced by the broker, so a request for a particular partition to the wrong broker will result in an the NotLeaderForPartition error code (described below).</p>
 
-<p>How can the client find out which topics exist, what partitions they have, and which brokers currently host those partitions so that it can direct its requests to the right hosts? This information is dynamic, so you can't just configure each client with some static mapping file. Instead all Kafka brokers can answer a metadata request that describes the current state of the cluster: what topics there are, which partitions those topics have, which broker is the leader for those partitions, and the host and port information for these brokers.</p>
+<p>How can the client find out which topics exist, what partitions they have, and which brokers currently host those partitions so that it can direct its requests to the right hosts? This information is dynamic, so you can't just configure each client with some static mapping file. Instead all Kafka brokers can answer a remoteLogMetadata request that describes the current state of the cluster: what topics there are, which partitions those topics have, which broker is the leader for those partitions, and the host and port information for these brokers.</p>
 
 <p>In other words, the client needs to somehow find one broker and that broker will tell the client about all the other brokers that exist and what partitions they host. This first broker may itself go down so the best practice for a client implementation is to take a list of two or three URLs to bootstrap from. The user can then choose to use a load balancer or just statically configure two or three of their Kafka hosts in the clients.</p>
 
-<p>The client does not need to keep polling to see if the cluster has changed; it can fetch metadata once when it is instantiated cache that metadata until it receives an error indicating that the metadata is out of date. This error can come in two forms: (1) a socket error indicating the client cannot communicate with a particular broker, (2) an error code in the response to a request indicating that this broker no longer hosts the partition for which data was requested.</p>
+<p>The client does not need to keep polling to see if the cluster has changed; it can fetch remoteLogMetadata once when it is instantiated cache that remoteLogMetadata until it receives an error indicating that the remoteLogMetadata is out of date. This error can come in two forms: (1) a socket error indicating the client cannot communicate with a particular broker, (2) an error code in the response to a request indicating that this broker no longer hosts the partition for which data was requested.</p>
 <ol>
-    <li>Cycle through a list of "bootstrap" Kafka URLs until we find one we can connect to. Fetch cluster metadata.</li>
+    <li>Cycle through a list of "bootstrap" Kafka URLs until we find one we can connect to. Fetch cluster remoteLogMetadata.</li>
     <li>Process fetch or produce requests, directing them to the appropriate broker based on the topic/partitions they send to or fetch from.</li>
-    <li>If we get an appropriate error, refresh the metadata and try again.</li>
+    <li>If we get an appropriate error, refresh the remoteLogMetadata and try again.</li>
 </ol>
 
 <h5 class="anchor-heading"><a id="protocol_partitioning_strategies" class="anchor-link"></a><a href="#protocol_partitioning_strategies">Partitioning Strategies</a></h5>

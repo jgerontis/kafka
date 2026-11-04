@@ -184,7 +184,7 @@ class ControllerIntegrationTest extends ZooKeeperTestHarness {
           }
         }
       }
-    }, "Inconsistent metadata after broker startup")
+    }, "Inconsistent remoteLogMetadata after broker startup")
   }
 
   @Test
@@ -229,13 +229,13 @@ class ControllerIntegrationTest extends ZooKeeperTestHarness {
         } else {
           false
         }
-      }, "Inconsistent metadata after broker startup")
+      }, "Inconsistent remoteLogMetadata after broker startup")
     }
 
-    //Start controller broker and check metadata
+    //Start controller broker and check remoteLogMetadata
     verifyMetadata(controllerBroker)
 
-    //Start other broker and check metadata
+    //Start other broker and check remoteLogMetadata
     verifyMetadata(otherBroker)
   }
 
@@ -573,7 +573,7 @@ class ControllerIntegrationTest extends ZooKeeperTestHarness {
     broker1.shutdown()
 
     val activeServers = servers.filter(s => s != broker1)
-    // wait for the update metadata request to trickle to the brokers
+    // wait for the update remoteLogMetadata request to trickle to the brokers
     TestUtils.waitUntilTrue(() =>
       activeServers.forall(_.dataPlaneRequestProcessor.metadataCache.getPartitionInfo(topic,partition).get.isr.size == 1),
       "ISR did not get reduced after controlled shutdown of broker 1")
@@ -624,7 +624,7 @@ class ControllerIntegrationTest extends ZooKeeperTestHarness {
     controller.controlledShutdown(2, servers.find(_.config.brokerId == 2).get.kafkaController.brokerEpoch, controlledShutdownCallback)
     var partitionsRemaining = resultQueue.take().get
     var activeServers = servers.filter(s => s.config.brokerId != 2)
-    // wait for the update metadata request to trickle to the brokers
+    // wait for the update remoteLogMetadata request to trickle to the brokers
     TestUtils.waitUntilTrue(() =>
       activeServers.forall(_.dataPlaneRequestProcessor.metadataCache.getPartitionInfo(topic,partition).get.isr.size != 3),
       "Topic test not created after timeout")
@@ -685,7 +685,7 @@ class ControllerIntegrationTest extends ZooKeeperTestHarness {
 
     var partitionsRemaining = resultQueue.take().get
     var activeServers = servers.filterNot(_ == server2)
-    // wait for the update metadata request to trickle to the brokers
+    // wait for the update remoteLogMetadata request to trickle to the brokers
     TestUtils.waitUntilTrue(() =>
       activeServers.forall(_.dataPlaneRequestProcessor.metadataCache.getPartitionInfo(topic,partition).get.isr.size != 4),
       "ISR did not get updated on all brokers after timeout")
@@ -747,7 +747,7 @@ class ControllerIntegrationTest extends ZooKeeperTestHarness {
 
     partitionsRemaining = resultQueue.take().get
     activeServers = activeServers.filterNot(server => server == server1)
-    // wait for the update metadata request to trickle to the brokers
+    // wait for the update remoteLogMetadata request to trickle to the brokers
     TestUtils.waitUntilTrue(() =>
       activeServers.forall(_.dataPlaneRequestProcessor.metadataCache.getPartitionInfo(topic,partition).get.isr.size != 3),
       "ISR did not get updated on all brokers after timeout")
@@ -1650,8 +1650,8 @@ class ControllerIntegrationTest extends ZooKeeperTestHarness {
 
     val assignment = Map(0 -> Seq(0))
     adminZkClient.createTopicWithAssignment(topic, new Properties(), assignment)
-    // wait until broker 0 has the metadata for the topic
-    // Note that broker 1 won't get the metadata since its processing of the UpdateMetadata is delayed
+    // wait until broker 0 has the remoteLogMetadata for the topic
+    // Note that broker 1 won't get the remoteLogMetadata since its processing of the UpdateMetadata is delayed
     var originalTopicId: Uuid = Uuid.ZERO_UUID
     TestUtils.waitUntilTrue(() => {
       val topicMetadataSeq = servers.find(_.config.brokerId == 0).get.metadataCache.getTopicMetadata(Set(topic), ListenerName.forSecurityProtocol(SecurityProtocol.PLAINTEXT))
@@ -1662,7 +1662,7 @@ class ControllerIntegrationTest extends ZooKeeperTestHarness {
         }
         case _ => false
       }
-    }, s"broker 0 never gets the metadata for the topic $topic")
+    }, s"broker 0 never gets the remoteLogMetadata for the topic $topic")
 
     info(s"original topic id $originalTopicId")
     // delete and then immediately recreate the topic
@@ -1683,7 +1683,7 @@ class ControllerIntegrationTest extends ZooKeeperTestHarness {
         }
         result
       }
-    }, "Now all servers end up with the new topic id in its metadata cache")
+    }, "Now all servers end up with the new topic id in its remoteLogMetadata cache")
   }
 
   @Test

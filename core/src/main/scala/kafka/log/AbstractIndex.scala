@@ -245,7 +245,7 @@ abstract class AbstractIndex(@volatile private var indexFile: File, val baseOffs
 
   def closeHandler(): Unit = {
     // On JVM, a memory mapping is typically unmapped by garbage collector.
-    // However, in some cases it can pause application threads(STW) for a long moment reading metadata from a physical disk.
+    // However, in some cases it can pause application threads(STW) for a long moment reading remoteLogMetadata from a physical disk.
     // To prevent this, we forcefully cleanup memory mapping within proper execution which never affects API responsiveness.
     // See https://issues.apache.org/jira/browse/KAFKA-4614 for the details.
     inLock(lock) {

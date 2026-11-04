@@ -614,7 +614,7 @@ class StreamsUpgradeTestJobRunnerService(StreamsTestBaseService):
         if self.UPGRADE_FROM is not None:
             properties['upgrade.from'] = self.UPGRADE_FROM
         if self.UPGRADE_TO == "future_version":
-            properties['test.future.metadata'] = "any_value"
+            properties['test.future.remoteLogMetadata'] = "any_value"
 
         # Long.MAX_VALUE lets us do the assignment without a warmup
         properties['acceptable.recovery.lag'] = "9223372036854775807"

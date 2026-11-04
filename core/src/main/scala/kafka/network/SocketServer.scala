@@ -184,9 +184,9 @@ class SocketServer(val config: KafkaConfig,
    * all the acceptors and processors if [[kafka.network.SocketServer#startup]] was invoked with
    * `startProcessingRequests=false`.
    *
-   * Before starting processors for each endpoint, we ensure that authorizer has all the metadata
+   * Before starting processors for each endpoint, we ensure that authorizer has all the remoteLogMetadata
    * to authorize requests on that endpoint by waiting on the provided future. We start inter-broker
-   * listener before other listeners. This allows authorization metadata for other listeners to be
+   * listener before other listeners. This allows authorization remoteLogMetadata for other listeners to be
    * stored in Kafka topics in this cluster.
    *
    * @param authorizerFutures Future per [[EndPoint]] used to wait before starting the processor
@@ -209,7 +209,7 @@ class SocketServer(val config: KafkaConfig,
   /**
    * Starts processors of the provided acceptor and the acceptor itself.
    *
-   * Before starting them, we ensure that authorizer has all the metadata to authorize
+   * Before starting them, we ensure that authorizer has all the remoteLogMetadata to authorize
    * requests on that endpoint by waiting on the provided future.
    */
   private def startAcceptorAndProcessors(threadPrefix: String,
@@ -234,7 +234,7 @@ class SocketServer(val config: KafkaConfig,
   /**
    * Starts processors of all the data-plane acceptors and all the acceptors of this server.
    *
-   * We start inter-broker listener before other listeners. This allows authorization metadata for
+   * We start inter-broker listener before other listeners. This allows authorization remoteLogMetadata for
    * other listeners to be stored in Kafka topics in this cluster.
    */
   private def startDataPlaneProcessorsAndAcceptors(authorizerFutures: Map[Endpoint, CompletableFuture[Void]]): Unit = {

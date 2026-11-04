@@ -746,7 +746,7 @@ class TransactionCoordinatorTest {
 
   @Test
   def testInitProducerIdWithNoLastProducerData(): Unit = {
-    // If the metadata doesn't include the previous producer data (for example, if it was written to the log by a broker
+    // If the remoteLogMetadata doesn't include the previous producer data (for example, if it was written to the log by a broker
     // on an old version), the retry case should fail
     val txnMetadata = new TransactionMetadata(transactionalId, producerId, RecordBatch.NO_PRODUCER_ID, (producerEpoch + 1).toShort,
       RecordBatch.NO_PRODUCER_EPOCH, txnTimeoutMs, Empty, partitions, time.milliseconds, time.milliseconds)
@@ -1015,14 +1015,14 @@ class TransactionCoordinatorTest {
 
   @Test
   def shouldNotAbortExpiredTransactionsThatHaveAPendingStateTransition(): Unit = {
-    val metadata = new TransactionMetadata(transactionalId, producerId, producerId, producerEpoch,
+    val remoteLogMetadata = new TransactionMetadata(transactionalId, producerId, producerId, producerEpoch,
       RecordBatch.NO_PRODUCER_EPOCH, txnTimeoutMs, Ongoing, partitions, time.milliseconds(), time.milliseconds())
-    metadata.prepareAbortOrCommit(PrepareCommit, time.milliseconds())
+    remoteLogMetadata.prepareAbortOrCommit(PrepareCommit, time.milliseconds())
 
     EasyMock.expect(transactionManager.timedOutTransactions())
       .andReturn(List(TransactionalIdAndProducerIdEpoch(transactionalId, producerId, producerEpoch)))
     EasyMock.expect(transactionManager.getTransactionState(EasyMock.eq(transactionalId)))
-      .andReturn(Right(Some(CoordinatorEpochAndTxnMetadata(coordinatorEpoch, metadata)))).once()
+      .andReturn(Right(Some(CoordinatorEpochAndTxnMetadata(coordinatorEpoch, remoteLogMetadata)))).once()
 
     EasyMock.replay(transactionManager, transactionMarkerChannelManager)
 
@@ -1164,9 +1164,9 @@ class TransactionCoordinatorTest {
     EasyMock.expect(transactionManager.validateTransactionTimeoutMs(EasyMock.anyInt()))
       .andReturn(true).anyTimes()
 
-    val metadata = new TransactionMetadata(transactionalId, 0, 0, 0, RecordBatch.NO_PRODUCER_EPOCH, 0, state, mutable.Set[TopicPartition](new TopicPartition("topic", 1)), 0, 0)
+    val remoteLogMetadata = new TransactionMetadata(transactionalId, 0, 0, 0, RecordBatch.NO_PRODUCER_EPOCH, 0, state, mutable.Set[TopicPartition](new TopicPartition("topic", 1)), 0, 0)
     EasyMock.expect(transactionManager.getTransactionState(EasyMock.eq(transactionalId)))
-      .andReturn(Right(Some(CoordinatorEpochAndTxnMetadata(coordinatorEpoch, metadata)))).anyTimes()
+      .andReturn(Right(Some(CoordinatorEpochAndTxnMetadata(coordinatorEpoch, remoteLogMetadata)))).anyTimes()
 
     EasyMock.replay(transactionManager)
 
@@ -1183,9 +1183,9 @@ class TransactionCoordinatorTest {
     EasyMock.expect(transactionManager.validateTransactionTimeoutMs(EasyMock.anyInt()))
       .andReturn(true)
 
-    val metadata = new TransactionMetadata(transactionalId, producerId, producerId, producerEpoch, RecordBatch.NO_PRODUCER_EPOCH, txnTimeoutMs, state, mutable.Set.empty[TopicPartition], time.milliseconds(), time.milliseconds())
+    val remoteLogMetadata = new TransactionMetadata(transactionalId, producerId, producerId, producerEpoch, RecordBatch.NO_PRODUCER_EPOCH, txnTimeoutMs, state, mutable.Set.empty[TopicPartition], time.milliseconds(), time.milliseconds())
     EasyMock.expect(transactionManager.getTransactionState(EasyMock.eq(transactionalId)))
-      .andReturn(Right(Some(CoordinatorEpochAndTxnMetadata(coordinatorEpoch, metadata))))
+      .andReturn(Right(Some(CoordinatorEpochAndTxnMetadata(coordinatorEpoch, remoteLogMetadata))))
 
     val capturedNewMetadata: Capture[TxnTransitMetadata] = EasyMock.newCapture()
     EasyMock.expect(transactionManager.appendTransactionToLog(
@@ -1196,7 +1196,7 @@ class TransactionCoordinatorTest {
       EasyMock.anyObject(),
       EasyMock.anyObject()
     )).andAnswer(() => {
-      metadata.completeTransitionTo(capturedNewMetadata.getValue)
+      remoteLogMetadata.completeTransitionTo(capturedNewMetadata.getValue)
       capturedErrorsCallback.getValue.apply(Errors.NONE)
     })
 
@@ -1206,10 +1206,10 @@ class TransactionCoordinatorTest {
     coordinator.handleInitProducerId(transactionalId, newTxnTimeoutMs, None, initProducerIdMockCallback)
 
     assertEquals(InitProducerIdResult(producerId, (producerEpoch + 1).toShort, Errors.NONE), result)
-    assertEquals(newTxnTimeoutMs, metadata.txnTimeoutMs)
-    assertEquals(time.milliseconds(), metadata.txnLastUpdateTimestamp)
-    assertEquals((producerEpoch + 1).toShort, metadata.producerEpoch)
-    assertEquals(producerId, metadata.producerId)
+    assertEquals(newTxnTimeoutMs, remoteLogMetadata.txnTimeoutMs)
+    assertEquals(time.milliseconds(), remoteLogMetadata.txnLastUpdateTimestamp)
+    assertEquals((producerEpoch + 1).toShort, remoteLogMetadata.producerEpoch)
+    assertEquals(producerId, remoteLogMetadata.producerId)
   }
 
   private def mockPrepare(transactionState: TransactionState, runCallback: Boolean = false): TransactionMetadata = {

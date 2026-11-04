@@ -68,7 +68,7 @@
 
     <h4 class="anchor-heading"><a id="design_constanttime" class="anchor-link"></a><a href="#design_constanttime">Constant Time Suffices</a></h4>
     <p>
-    The persistent data structure used in messaging systems are often a per-consumer queue with an associated BTree or other general-purpose random access data structures to maintain metadata about messages.
+    The persistent data structure used in messaging systems are often a per-consumer queue with an associated BTree or other general-purpose random access data structures to maintain remoteLogMetadata about messages.
     BTrees are the most versatile data structure available, and make it possible to support a wide variety of transactional and non-transactional semantics in the messaging system.
     They do come with a fairly high cost, though: Btree operations are O(log N). Normally O(log N) is considered essentially equivalent to constant time, but this is not true for disk operations.
     Disk seeks come at 10 ms a pop, and each disk can do only one seek at a time so parallelism is limited. Hence even a handful of disk seeks leads to very high overhead.
@@ -142,7 +142,7 @@
 
     <h4 class="anchor-heading"><a id="design_loadbalancing" class="anchor-link"></a><a href="#design_loadbalancing">Load balancing</a></h4>
     <p>
-    The producer sends data directly to the broker that is the leader for the partition without any intervening routing tier. To help the producer do this all Kafka nodes can answer a request for metadata about which
+    The producer sends data directly to the broker that is the leader for the partition without any intervening routing tier. To help the producer do this all Kafka nodes can answer a request for remoteLogMetadata about which
     servers are alive and where the leaders for the partitions of a topic are at any given time to allow the producer to appropriately direct its requests.
     <p>
     The client controls which partition it publishes messages to. This can be done at random, implementing a kind of random load balancing, or it can be done by some semantic partitioning function. We expose the interface
@@ -190,7 +190,7 @@
     <h4 class="anchor-heading"><a id="design_consumerposition" class="anchor-link"></a><a href="#design_consumerposition">Consumer Position</a></h4>
     Keeping track of <i>what</i> has been consumed is, surprisingly, one of the key performance points of a messaging system.
     <p>
-    Most messaging systems keep metadata about what messages have been consumed on the broker. That is, as a message is handed out to a consumer, the broker either records that fact locally immediately or it may wait
+    Most messaging systems keep remoteLogMetadata about what messages have been consumed on the broker. That is, as a message is handed out to a consumer, the broker either records that fact locally immediately or it may wait
     for acknowledgement from the consumer. This is a fairly intuitive choice, and indeed for a single machine server it is not clear where else this state could go. Since the data structures used for storage in many
     messaging systems scale poorly, this is also a pragmatic choice--since the broker knows what is consumed it can immediately delete it, keeping the data size small.
     <p>

@@ -1040,7 +1040,7 @@ class KafkaZkClientTest extends ZooKeeperTestHarness {
   }
 
   private def eraseMetadata(response: CreateResponse): CreateResponse =
-    response.copy(metadata = ResponseMetadata(0, 0))
+    response.copy(remoteLogMetadata = ResponseMetadata(0, 0))
 
   @Test
   def testGetTopicsAndPartitions(): Unit = {
@@ -1154,7 +1154,7 @@ class KafkaZkClientTest extends ZooKeeperTestHarness {
     assertEquals(
       expectedSetDataResponses(topicPartition10, topicPartition11)(Code.NONODE, null),
       zkClient.setTopicPartitionStatesRaw(initialLeaderIsrAndControllerEpochs, controllerEpochZkVersion).map {
-        _.copy(metadata = ResponseMetadata(0, 0))}.toList)
+        _.copy(remoteLogMetadata = ResponseMetadata(0, 0))}.toList)
 
     zkClient.createTopicPartitionStatesRaw(initialLeaderIsrAndControllerEpochs, controllerEpochZkVersion)
 
@@ -1218,7 +1218,7 @@ class KafkaZkClientTest extends ZooKeeperTestHarness {
 
   private def eraseMetadataAndStat(response: SetDataResponse): SetDataResponse = {
     val stat = if (response.stat != null) statWithVersion(response.stat.getVersion) else null
-    response.copy(metadata = ResponseMetadata(0, 0), stat = stat)
+    response.copy(remoteLogMetadata = ResponseMetadata(0, 0), stat = stat)
   }
 
   @Test

@@ -27,7 +27,7 @@ import kafka.server.KafkaRaftServer.{BrokerRole, ControllerRole}
 import kafka.utils.{CoreUtils, Logging, Mx4jLoader, VerifiableProperties}
 import org.apache.kafka.common.utils.{AppInfoParser, Time}
 import org.apache.kafka.common.{TopicPartition, Uuid}
-import org.apache.kafka.metadata.MetadataRecordSerde
+import org.apache.kafka.remoteLogMetadata.MetadataRecordSerde
 import org.apache.kafka.raft.RaftConfig
 import org.apache.kafka.server.common.ApiMessageAndVersion
 
@@ -35,7 +35,7 @@ import scala.collection.Seq
 
 /**
  * This class implements the KRaft (Kafka Raft) mode server which relies
- * on a KRaft quorum for maintaining cluster metadata. It is responsible for
+ * on a KRaft quorum for maintaining cluster remoteLogMetadata. It is responsible for
  * constructing the controller and/or broker based on the `process.roles`
  * configuration and for managing their basic lifecycle (startup and shutdown).
  *
@@ -163,8 +163,8 @@ object KafkaRaftServer {
     onlineNonMetadataDirs.foreach { logDir =>
       val metadataDir = new File(logDir, metadataPartitionDirName)
       if (metadataDir.exists) {
-        throw new KafkaException(s"Found unexpected metadata location in data directory `$metadataDir` " +
-          s"(the configured metadata directory is ${config.metadataLogDir}).")
+        throw new KafkaException(s"Found unexpected remoteLogMetadata location in data directory `$metadataDir` " +
+          s"(the configured remoteLogMetadata directory is ${config.metadataLogDir}).")
       }
     }
 

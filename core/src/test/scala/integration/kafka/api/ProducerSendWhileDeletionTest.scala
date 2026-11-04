@@ -43,7 +43,7 @@ class ProducerSendWhileDeletionTest extends IntegrationTestHarness {
      * Tests that Producer gets self-recovered when a topic is deleted mid-way of produce.
      *
      * Producer will attempt to send messages to the partition specified in each record, and should
-     * succeed as long as the partition is included in the metadata.
+     * succeed as long as the partition is included in the remoteLogMetadata.
      */
     @Test
     def testSendWithTopicDeletionMidWay(): Unit = {
@@ -73,7 +73,7 @@ class ProducerSendWhileDeletionTest extends IntegrationTestHarness {
         // Start topic deletion
         adminZkClient.deleteTopic(topic)
 
-        // Verify that the topic is deleted when no metadata request comes in
+        // Verify that the topic is deleted when no remoteLogMetadata request comes in
         TestUtils.verifyTopicDeletion(zkClient, topic, 2, servers)
 
         // Producer should be able to send messages even after topic gets deleted and auto-created

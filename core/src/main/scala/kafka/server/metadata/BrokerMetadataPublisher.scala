@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package kafka.server.metadata
+package kafka.server.remoteLogMetadata
 
 import kafka.coordinator.group.GroupCoordinator
 import kafka.coordinator.transaction.TransactionCoordinator
@@ -38,8 +38,8 @@ object BrokerMetadataPublisher extends Logging {
    * up in deletedTopicIds and must be handled separately.
    *
    * @param topicName   The topic name.
-   * @param newImage    The new metadata image.
-   * @param delta       The metadata delta to search.
+   * @param newImage    The new remoteLogMetadata image.
+   * @param delta       The remoteLogMetadata delta to search.
    *
    * @return            The delta, or None if appropriate.
    */
@@ -54,7 +54,7 @@ object BrokerMetadataPublisher extends Logging {
   }
 
   /**
-   * Find logs which should not be on the current broker, according to the metadata image.
+   * Find logs which should not be on the current broker, according to the remoteLogMetadata image.
    *
    * @param brokerId        The ID of the current broker.
    * @param newTopicsImage  The new topics image after broker has been reloaded
@@ -83,7 +83,7 @@ object BrokerMetadataPublisher extends Logging {
           }
 
         case None =>
-          info(s"Found stray log dir $log: the topicId $topicId does not exist in the metadata image")
+          info(s"Found stray log dir $log: the topicId $topicId does not exist in the remoteLogMetadata image")
           Some(log.topicPartition)
       }
     }
@@ -109,7 +109,7 @@ class BrokerMetadataPublisher(conf: KafkaConfig,
   val brokerId = conf.nodeId
 
   /**
-   * True if this is the first time we have published metadata.
+   * True if this is the first time we have published remoteLogMetadata.
    */
   var _firstPublish = true
 
@@ -117,17 +117,17 @@ class BrokerMetadataPublisher(conf: KafkaConfig,
                        delta: MetadataDelta,
                        newImage: MetadataImage): Unit = {
     try {
-      // Publish the new metadata image to the metadata cache.
+      // Publish the new remoteLogMetadata image to the remoteLogMetadata cache.
       metadataCache.setImage(newImage)
 
       if (_firstPublish) {
-        info(s"Publishing initial metadata at offset ${newHighestMetadataOffset}.")
+        info(s"Publishing initial remoteLogMetadata at offset ${newHighestMetadataOffset}.")
 
-        // If this is the first metadata update we are applying, initialize the managers
-        // first (but after setting up the metadata cache).
+        // If this is the first remoteLogMetadata update we are applying, initialize the managers
+        // first (but after setting up the remoteLogMetadata cache).
         initializeManagers()
       } else if (isDebugEnabled) {
-        debug(s"Publishing metadata at offset ${newHighestMetadataOffset}.")
+        debug(s"Publishing remoteLogMetadata at offset ${newHighestMetadataOffset}.")
       }
 
       // Apply feature deltas.
@@ -231,7 +231,7 @@ class BrokerMetadataPublisher(conf: KafkaConfig,
         finishInitializingReplicaManager(newImage)
       }
     } catch {
-      case t: Throwable => error(s"Error publishing broker metadata at ${newHighestMetadataOffset}", t)
+      case t: Throwable => error(s"Error publishing broker remoteLogMetadata at ${newHighestMetadataOffset}", t)
         throw t
     } finally {
       _firstPublish = false
@@ -257,7 +257,7 @@ class BrokerMetadataPublisher(conf: KafkaConfig,
 
   private def finishInitializingReplicaManager(newImage: MetadataImage): Unit = {
     // Delete log directories which we're not supposed to have, according to the
-    // latest metadata. This is only necessary to do when we're first starting up. If
+    // latest remoteLogMetadata. This is only necessary to do when we're first starting up. If
     // we have to load a snapshot later, these topics will appear in deletedTopicIds.
     val strayPartitions = findStrayPartitions(brokerId, newImage.topics, logManager.allLogs)
     if (strayPartitions.nonEmpty) {

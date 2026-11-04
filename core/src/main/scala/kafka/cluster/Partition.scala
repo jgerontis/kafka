@@ -1536,7 +1536,7 @@ class Partition(val topicPartition: TopicPartition,
   /**
    * This is called for each partition in the body of an AlterIsr response. For errors which are non-retryable we simply
    * give up. This leaves [[Partition.isrState]] in an in-flight state (either pending shrink or pending expand).
-   * Since our error was non-retryable we are okay staying in this state until we see new metadata from UpdateMetadata
+   * Since our error was non-retryable we are okay staying in this state until we see new remoteLogMetadata from UpdateMetadata
    * or LeaderAndIsr
    *
    * @return true if the HW incremented after handleAlterIsrResponse

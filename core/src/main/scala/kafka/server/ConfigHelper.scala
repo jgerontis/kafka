@@ -20,7 +20,7 @@ package kafka.server
 import java.util.{Collections, Properties}
 
 import kafka.log.LogConfig
-import kafka.server.metadata.ConfigRepository
+import kafka.server.remoteLogMetadata.ConfigRepository
 import kafka.utils.{Log4jController, Logging}
 import org.apache.kafka.common.config.{AbstractConfig, ConfigDef, ConfigResource}
 import org.apache.kafka.common.errors.{ApiException, InvalidRequestException}

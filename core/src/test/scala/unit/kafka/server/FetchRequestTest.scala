@@ -259,7 +259,7 @@ class FetchRequestTest extends BaseFetchRequestTest {
     partitionMap.put(topicPartition, new FetchRequest.PartitionData(0L, 0L, 1024,
       Optional.of(leaderEpoch)))
     val fetchRequest = FetchRequest.Builder.forConsumer(0, 1, partitionMap)
-      .metadata(JFetchMetadata.INITIAL)
+      .remoteLogMetadata(JFetchMetadata.INITIAL)
       .build()
     val fetchResponse = sendFetchRequest(destinationBrokerId, fetchRequest)
     val sessionId = fetchResponse.sessionId
@@ -270,7 +270,7 @@ class FetchRequestTest extends BaseFetchRequestTest {
       val partitionMap = new util.LinkedHashMap[TopicPartition, FetchRequest.PartitionData]
       partitionMap.put(topicPartition, new FetchRequest.PartitionData(0L, 0L, 1024, leaderEpoch))
       val fetchRequest = FetchRequest.Builder.forConsumer(0, 1, partitionMap)
-        .metadata(new JFetchMetadata(sessionId, sessionFetchEpoch))
+        .remoteLogMetadata(new JFetchMetadata(sessionId, sessionFetchEpoch))
         .build()
       val fetchResponse = sendFetchRequest(destinationBrokerId, fetchRequest)
       val partitionData = fetchResponse.responseData.get(topicPartition)
@@ -432,12 +432,12 @@ class FetchRequestTest extends BaseFetchRequestTest {
   @Test
   def testCreateIncrementalFetchWithPartitionsInError(): Unit = {
     def createFetchRequest(topicPartitions: Seq[TopicPartition],
-                           metadata: JFetchMetadata,
+                           remoteLogMetadata: JFetchMetadata,
                            toForget: Seq[TopicPartition]): FetchRequest =
       FetchRequest.Builder.forConsumer(Int.MaxValue, 0,
         createPartitionMap(Integer.MAX_VALUE, topicPartitions, Map.empty))
         .toForget(toForget.asJava)
-        .metadata(metadata)
+        .remoteLogMetadata(remoteLogMetadata)
         .build()
     val foo0 = new TopicPartition("foo", 0)
     val foo1 = new TopicPartition("foo", 1)

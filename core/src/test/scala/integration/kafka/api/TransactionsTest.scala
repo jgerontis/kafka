@@ -394,7 +394,7 @@ class TransactionsTest extends KafkaServerTestHarness {
     producer.initTransactions()
 
     producer.beginTransaction()
-    val offsetAndMetadata = new OffsetAndMetadata(110L, Optional.of(15), "some metadata")
+    val offsetAndMetadata = new OffsetAndMetadata(110L, Optional.of(15), "some remoteLogMetadata")
     producer.sendOffsetsToTransaction(Map(tp -> offsetAndMetadata).asJava, new ConsumerGroupMetadata(groupId))
     producer.commitTransaction()  // ok
 

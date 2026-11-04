@@ -40,7 +40,7 @@ import org.apache.kafka.server.log.remote.storage.{LocalTieredStorage, LocalTier
 import org.apache.kafka.common.security.auth.SecurityProtocol
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.utils.Utils
-import org.apache.kafka.metadata.BrokerState
+import org.apache.kafka.remoteLogMetadata.BrokerState
 
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters._
@@ -90,8 +90,8 @@ final class TieredStorageTestContext(private val zookeeperClient: KafkaZkClient,
 
   def createTopic(spec: TopicSpec): Unit = {
     val assignments = spec.assignment.getOrElse {
-      val metadata = brokers.head.metadataCache.getAliveBrokers().map(b => BrokerMetadata(b.id, b.rack))
-      assignReplicasToBrokers(metadata, spec.partitionCount, spec.replicationFactor, 0, 0)
+      val remoteLogMetadata = brokers.head.metadataCache.getAliveBrokers().map(b => BrokerMetadata(b.id, b.rack))
+      assignReplicasToBrokers(remoteLogMetadata, spec.partitionCount, spec.replicationFactor, 0, 0)
     }
 
     TestUtils.createTopic(zookeeperClient, spec.topicName, assignments, brokers, spec.properties)

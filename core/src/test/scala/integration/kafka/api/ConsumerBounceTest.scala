@@ -388,7 +388,7 @@ class ConsumerBounceTest extends AbstractConsumerTest with Logging {
       executor.submit(() => {
         consumer.subscribe(Collections.singletonList(topic))
         revokeSemaphore.foreach(s => s.release())
-        // requires to used deprecated `poll(long)` to trigger metadata update
+        // requires to used deprecated `poll(long)` to trigger remoteLogMetadata update
           consumer.poll(0L)
         }, 0)
     }

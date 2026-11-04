@@ -26,7 +26,7 @@ import kafka.log.LogConfig
 import kafka.utils.Log4jController
 import kafka.metrics.KafkaMetricsGroup
 import kafka.server.DynamicConfig.QuotaConfigs
-import kafka.server.metadata.ZkConfigRepository
+import kafka.server.remoteLogMetadata.ZkConfigRepository
 import kafka.utils._
 import kafka.utils.Implicits._
 import kafka.zk.{AdminZkClient, KafkaZkClient}
@@ -155,7 +155,7 @@ class ZkAdminManager(val config: KafkaConfig,
 
     // 1. map over topics creating assignment and calling zookeeper
     val brokers = metadataCache.getAliveBrokers()
-    val metadata = toCreate.values.map(topic =>
+    val remoteLogMetadata = toCreate.values.map(topic =>
       try {
         if (metadataCache.contains(topic.name))
           throw new TopicExistsException(s"Topic '${topic.name}' already exists.")
@@ -221,7 +221,7 @@ class ZkAdminManager(val config: KafkaConfig,
         adminZkClient.validateTopicCreate(topic.name, assignments, configs)
         validateTopicCreatePolicy(topic, resolvedNumPartitions, resolvedReplicationFactor, assignments)
 
-        // For responses with DescribeConfigs permission, populate metadata and configs. It is
+        // For responses with DescribeConfigs permission, populate remoteLogMetadata and configs. It is
         // safe to populate it before creating the topic because the values are unset if the
         // creation fails.
         maybePopulateMetadataAndConfigs(includeConfigsAndMetadata, topic.name, configs, assignments)
@@ -254,8 +254,8 @@ class ZkAdminManager(val config: KafkaConfig,
       }).toBuffer
 
     // 2. if timeout <= 0, validateOnly or no topics can proceed return immediately
-    if (timeout <= 0 || validateOnly || !metadata.exists(_.error.is(Errors.NONE))) {
-      val results = metadata.map { createTopicMetadata =>
+    if (timeout <= 0 || validateOnly || !remoteLogMetadata.exists(_.error.is(Errors.NONE))) {
+      val results = remoteLogMetadata.map { createTopicMetadata =>
         // ignore topics that already have errors
         if (createTopicMetadata.error.isSuccess && !validateOnly) {
           (createTopicMetadata.topic, new ApiError(Errors.REQUEST_TIMED_OUT, null))
@@ -266,7 +266,7 @@ class ZkAdminManager(val config: KafkaConfig,
       responseCallback(results)
     } else {
       // 3. else pass the assignments and errors to the delayed operation and set the keys
-      val delayedCreate = new DelayedCreatePartitions(timeout, metadata, this,
+      val delayedCreate = new DelayedCreatePartitions(timeout, remoteLogMetadata, this,
         responseCallback)
       val delayedCreateKeys = toCreate.values.map(topic => TopicKey(topic.name)).toBuffer
       // try to complete the request immediately, otherwise put it into the purgatory
@@ -283,7 +283,7 @@ class ZkAdminManager(val config: KafkaConfig,
                    controllerMutationQuota: ControllerMutationQuota,
                    responseCallback: Map[String, Errors] => Unit): Unit = {
     // 1. map over topics calling the asynchronous delete
-    val metadata = topics.map { topic =>
+    val remoteLogMetadata = topics.map { topic =>
         try {
           controllerMutationQuota.record(metadataCache.numPartitions(topic).getOrElse(0).toDouble)
           adminZkClient.deleteTopic(topic)
@@ -302,8 +302,8 @@ class ZkAdminManager(val config: KafkaConfig,
     }
 
     // 2. if timeout <= 0 or no topics can proceed return immediately
-    if (timeout <= 0 || !metadata.exists(_.error == Errors.NONE)) {
-      val results = metadata.map { deleteTopicMetadata =>
+    if (timeout <= 0 || !remoteLogMetadata.exists(_.error == Errors.NONE)) {
+      val results = remoteLogMetadata.map { deleteTopicMetadata =>
         // ignore topics that already have errors
         if (deleteTopicMetadata.error == Errors.NONE) {
           (deleteTopicMetadata.topic, Errors.REQUEST_TIMED_OUT)
@@ -314,7 +314,7 @@ class ZkAdminManager(val config: KafkaConfig,
       responseCallback(results)
     } else {
       // 3. else pass the topics and errors to the delayed operation and set the keys
-      val delayedDelete = new DelayedDeleteTopics(timeout, metadata.toSeq, this, responseCallback)
+      val delayedDelete = new DelayedDeleteTopics(timeout, remoteLogMetadata.toSeq, this, responseCallback)
       val delayedDeleteKeys = topics.map(TopicKey).toSeq
       // try to complete the request immediately, otherwise put it into the purgatory
       topicPurgatory.tryCompleteElseWatch(delayedDelete, delayedDeleteKeys)
@@ -330,7 +330,7 @@ class ZkAdminManager(val config: KafkaConfig,
     val allBrokerIds = allBrokers.map(_.id)
 
     // 1. map over topics creating assignment and calling AdminUtils
-    val metadata = newPartitions.map { newPartition =>
+    val remoteLogMetadata = newPartitions.map { newPartition =>
       val topic = newPartition.name
 
       try {
@@ -401,8 +401,8 @@ class ZkAdminManager(val config: KafkaConfig,
     }
 
     // 2. if timeout <= 0, validateOnly or no topics can proceed return immediately
-    if (timeout <= 0 || validateOnly || !metadata.exists(_.error.is(Errors.NONE))) {
-      val results = metadata.map { createPartitionMetadata =>
+    if (timeout <= 0 || validateOnly || !remoteLogMetadata.exists(_.error.is(Errors.NONE))) {
+      val results = remoteLogMetadata.map { createPartitionMetadata =>
         // ignore topics that already have errors
         if (createPartitionMetadata.error.isSuccess && !validateOnly) {
           (createPartitionMetadata.topic, new ApiError(Errors.REQUEST_TIMED_OUT, null))
@@ -413,7 +413,7 @@ class ZkAdminManager(val config: KafkaConfig,
       callback(results)
     } else {
       // 3. else pass the assignments and errors to the delayed operation and set the keys
-      val delayedCreate = new DelayedCreatePartitions(timeout, metadata, this, callback)
+      val delayedCreate = new DelayedCreatePartitions(timeout, remoteLogMetadata, this, callback)
       val delayedCreateKeys = newPartitions.map(createPartitionTopic => TopicKey(createPartitionTopic.name))
       // try to complete the request immediately, otherwise put it into the purgatory
       topicPurgatory.tryCompleteElseWatch(delayedCreate, delayedCreateKeys)

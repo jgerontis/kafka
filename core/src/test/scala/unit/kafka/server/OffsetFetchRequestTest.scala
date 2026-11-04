@@ -39,7 +39,7 @@ class OffsetFetchRequestTest extends BaseRequestTest {
   val brokerId: Integer = 0
   val offset = 15L
   val leaderEpoch: Optional[Integer] = Optional.of(3)
-  val metadata = "metadata"
+  val remoteLogMetadata = "remoteLogMetadata"
   val topic = "topic"
   val groupId = "groupId"
   val groups: Seq[String] = (1 to 5).map(i => s"group$i")
@@ -110,7 +110,7 @@ class OffsetFetchRequestTest extends BaseRequestTest {
         verifySingleGroupResponse(version.asInstanceOf[Short],
           response.error().code(), partitionData.errorCode(), topicData.name(),
           partitionData.partitionIndex(), partitionData.committedOffset(),
-          partitionData.committedLeaderEpoch(), partitionData.metadata())
+          partitionData.committedLeaderEpoch(), partitionData.remoteLogMetadata())
       } else {
         val request = new OffsetFetchRequest.Builder(
           Map(groupId -> tpList).asJava, false, false)
@@ -122,7 +122,7 @@ class OffsetFetchRequestTest extends BaseRequestTest {
         verifySingleGroupResponse(version.asInstanceOf[Short],
           groupData.errorCode(), partitionData.errorCode(), topicData.name(),
           partitionData.partitionIndex(), partitionData.committedOffset(),
-          partitionData.committedLeaderEpoch(), partitionData.metadata())
+          partitionData.committedLeaderEpoch(), partitionData.remoteLogMetadata())
       }
     }
   }
@@ -201,14 +201,14 @@ class OffsetFetchRequestTest extends BaseRequestTest {
     if (version >= 5) {
       assertEquals(leaderEpoch.get(), committedLeaderEpoch)
     }
-    assertEquals(metadata, partitionMetadata)
+    assertEquals(remoteLogMetadata, partitionMetadata)
     assertEquals(Errors.NONE.code(), partitionError)
   }
 
   private def verifyPartitionData(partitionData: OffsetFetchResponse.PartitionData): Unit = {
     assertTrue(!partitionData.hasError)
     assertEquals(offset, partitionData.offset)
-    assertEquals(metadata, partitionData.metadata)
+    assertEquals(remoteLogMetadata, partitionData.remoteLogMetadata)
     assertEquals(leaderEpoch.get(), partitionData.leaderEpoch.get())
   }
 
@@ -224,7 +224,7 @@ class OffsetFetchRequestTest extends BaseRequestTest {
     val consumer = createConsumer()
     consumer.assign(tpList)
     val offsets = tpList.asScala.map{
-      tp => (tp, new OffsetAndMetadata(offset, leaderEpoch, metadata))
+      tp => (tp, new OffsetAndMetadata(offset, leaderEpoch, remoteLogMetadata))
     }.toMap.asJava
     consumer.commitSync(offsets)
     consumer.close()

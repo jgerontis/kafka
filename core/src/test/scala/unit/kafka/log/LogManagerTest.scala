@@ -20,7 +20,7 @@ package kafka.log
 import com.yammer.metrics.core.MetricName
 import kafka.metrics.KafkaYammerMetrics
 import kafka.server.checkpoints.OffsetCheckpointFile
-import kafka.server.metadata.{ConfigRepository, MockConfigRepository}
+import kafka.server.remoteLogMetadata.{ConfigRepository, MockConfigRepository}
 import kafka.server.{FetchDataInfo, FetchLogEnd}
 import kafka.utils._
 import org.apache.directory.api.util.FileUtils

@@ -783,7 +783,7 @@
         We have removed these deprecated APIs:
     </p>
     <ul>
-        <li><code>KafkaStreams#toString</code> no longer returns the topology and runtime metadata; to get topology metadata users can call <code>Topology#describe()</code> and to get thread runtime metadata users can call <code>KafkaStreams#localThreadsMetadata</code> (they are deprecated since 1.0.0).
+        <li><code>KafkaStreams#toString</code> no longer returns the topology and runtime remoteLogMetadata; to get topology remoteLogMetadata users can call <code>Topology#describe()</code> and to get thread runtime remoteLogMetadata users can call <code>KafkaStreams#localThreadsMetadata</code> (they are deprecated since 1.0.0).
             For detailed guidance on how to update your code please read <a href="#streams_api_changes_100">here</a></li>
         <li><code>TopologyBuilder</code> and <code>KStreamBuilder</code> are removed and replaced by <code>Topology</code> and <code>StreamsBuidler</code> respectively (they are deprecated since 1.0.0).
             For detailed guidance on how to update your code please read <a href="#streams_api_changes_100">here</a></li>

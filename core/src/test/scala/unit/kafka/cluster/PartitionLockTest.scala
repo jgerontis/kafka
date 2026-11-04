@@ -26,7 +26,7 @@ import kafka.log._
 import kafka.server._
 import kafka.server.checkpoints.OffsetCheckpoints
 import kafka.server.epoch.LeaderEpochFileCache
-import kafka.server.metadata.MockConfigRepository
+import kafka.server.remoteLogMetadata.MockConfigRepository
 import kafka.utils._
 import org.apache.kafka.common.message.LeaderAndIsrRequestData.LeaderAndIsrPartitionState
 import org.apache.kafka.common.{TopicPartition, Uuid}

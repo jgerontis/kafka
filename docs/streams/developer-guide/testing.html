@@ -310,9 +310,9 @@ context.resetCommit();
 
 assertFalse(context.committed());</code></pre>
             </p>
-            <b>Setting record metadata</b>
+            <b>Setting record remoteLogMetadata</b>
             <p>
-                In case your processor logic depends on the record metadata (topic, partition, offset, or timestamp),
+                In case your processor logic depends on the record remoteLogMetadata (topic, partition, offset, or timestamp),
                 you can set them on the context, either all together or individually:
             <pre class="line-numbers"><code class="language-java">context.setRecordMetadata(&quot;topicName&quot;, /*partition*/ 0, /*offset*/ 0L, /*timestamp*/ 0L);
 context.setTopic(&quot;topicName&quot;);

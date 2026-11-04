@@ -47,7 +47,7 @@ import scala.util.{Failure, Random, Success, Try}
 
 object AclAuthorizer {
   // Optional override zookeeper cluster configuration where acls will be stored. If not specified,
-  // acls will be stored in the same zookeeper where all other kafka broker metadata is stored.
+  // acls will be stored in the same zookeeper where all other kafka broker remoteLogMetadata is stored.
   val configPrefix = "authorizer."
   val ZkUrlProp = s"${configPrefix}zookeeper.url"
   val ZkConnectionTimeOutProp = s"${configPrefix}zookeeper.connection.timeout.ms"

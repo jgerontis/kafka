@@ -314,7 +314,7 @@ class RequestQuotaTest extends BaseRequestTest {
                           .setPartitionIndex(0)
                           .setCommittedLeaderEpoch(RecordBatch.NO_PARTITION_LEADER_EPOCH)
                           .setCommittedOffset(0)
-                          .setCommittedMetadata("metadata")
+                          .setCommittedMetadata("remoteLogMetadata")
                       )
                     )
                 )

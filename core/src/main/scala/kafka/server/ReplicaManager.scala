@@ -69,7 +69,7 @@ import scala.compat.java8.OptionConverters._
 import scala.util.Random
 
 /*
- * Result metadata of a log append operation on the log
+ * Result remoteLogMetadata of a log append operation on the log
  */
 case class LogAppendResult(info: LogAppendInfo, exception: Option[Throwable] = None) {
   def error: Errors = exception match {
@@ -88,7 +88,7 @@ case class LogDeleteRecordsResult(requestedOffset: Long, lowWatermark: Long, exc
 case class StopPartition(topicPartition: TopicPartition, deleteLocalLog: Boolean, deleteRemoteLog: Boolean = false)
 
 /**
- * Result metadata of a log read operation on the log
+ * Result remoteLogMetadata of a log read operation on the log
  * @param info @FetchDataInfo returned by the @Log read
  * @param divergingEpoch Optional epoch and end offset which indicates the largest epoch such
  *                       that subsequent records are known to diverge on the follower/consumer
@@ -160,7 +160,7 @@ case class FetchPartitionData(error: Errors = Errors.NONE,
 
 /**
  * Trait to represent the state of hosted partitions. We create a concrete (active) Partition
- * instance when the broker receives a LeaderAndIsr request from the controller or a metadata
+ * instance when the broker receives a LeaderAndIsr request from the controller or a remoteLogMetadata
  * log record from the Quorum controller indicating that the broker should be either a leader
  * or follower of a partition.
  */
@@ -600,7 +600,7 @@ class ReplicaManager(val config: KafkaConfig,
 
       case HostedPartition.None if metadataCache.contains(topicPartition) =>
         // The topic exists, but this broker is no longer a replica of it, so we return NOT_LEADER_OR_FOLLOWER which
-        // forces clients to refresh metadata to find the new location. This can happen, for example,
+        // forces clients to refresh remoteLogMetadata to find the new location. This can happen, for example,
         // during a partition reassignment if a produce request from the client is sent to a broker after
         // the local replica has been deleted.
         Left(Errors.NOT_LEADER_OR_FOLLOWER)
@@ -1295,7 +1295,7 @@ class ReplicaManager(val config: KafkaConfig,
 
         // If we are the leader, determine the preferred read-replica
         val preferredReadReplica = clientMetadata.flatMap(
-          metadata => findPreferredReadReplica(partition, metadata, replicaId, fetchInfo.fetchOffset, fetchTimeMs))
+          remoteLogMetadata => findPreferredReadReplica(partition, remoteLogMetadata, replicaId, fetchInfo.fetchOffset, fetchTimeMs))
 
         if (preferredReadReplica.isDefined) {
           replicaSelectorOpt.foreach { selector =>
@@ -1354,7 +1354,7 @@ class ReplicaManager(val config: KafkaConfig,
           // Incase of offset out of range errors, check for remote log manager for non-compacted topics
           // to fetch from remote storage. `log` instance should not be null here as that would have caught earlier with
           // NotLeaderForPartitionException or ReplicaNotAvailableException.
-          // If it is from a follower then send the offset metadata but not the records data as that can be fetched
+          // If it is from a follower then send the offset remoteLogMetadata but not the records data as that can be fetched
           // from the remote store.
           if (remoteLogManager.isDefined && log != null && log.remoteLogEnabled()) {
             // For follower fetch requests, throw an error saying that this offset is moved to tiered storage.
@@ -1425,7 +1425,7 @@ class ReplicaManager(val config: KafkaConfig,
 
   /**
     * Using the configured [[ReplicaSelector]], determine the preferred read replica for a partition given the
-    * client metadata, the requested offset, and the current set of replicas. If the preferred read replica is the
+    * client remoteLogMetadata, the requested offset, and the current set of replicas. If the preferred read replica is the
     * leader, return None
     */
   def findPreferredReadReplica(partition: Partition,
@@ -1481,7 +1481,7 @@ class ReplicaManager(val config: KafkaConfig,
   def maybeUpdateMetadataCache(correlationId: Int, updateMetadataRequest: UpdateMetadataRequest) : Seq[TopicPartition] =  {
     replicaStateChangeLock synchronized {
       if (updateMetadataRequest.controllerEpoch < controllerEpoch) {
-        val stateControllerEpochErrorMessage = s"Received update metadata request with correlation id $correlationId " +
+        val stateControllerEpochErrorMessage = s"Received update remoteLogMetadata request with correlation id $correlationId " +
           s"from an old controller ${updateMetadataRequest.controllerId} with epoch ${updateMetadataRequest.controllerEpoch}. " +
           s"Latest known controller epoch is $controllerEpoch"
         stateChangeLogger.warn(stateControllerEpochErrorMessage)
@@ -1805,7 +1805,7 @@ class ReplicaManager(val config: KafkaConfig,
    * Make the current broker to become leader for a given set of partitions by:
    *
    * 1. Stop fetchers for these partitions
-   * 2. Update the partition metadata in cache
+   * 2. Update the partition remoteLogMetadata in cache
    * 3. Add these partitions to the leader partitions set
    *
    * If an unexpected error is thrown in this function, it will be propagated to KafkaApis where
@@ -1930,7 +1930,7 @@ class ReplicaManager(val config: KafkaConfig,
                 s"controller epoch ${partitionState.controllerEpoch}) " +
                 s"since the new leader $newLeaderBrokerId is the same as the old leader")
           } else {
-            // The leader broker should always be present in the metadata cache.
+            // The leader broker should always be present in the remoteLogMetadata cache.
             // If not, we should record the error message and abort the transition process for this partition
             stateChangeLogger.error(s"Received LeaderAndIsrRequest with correlation id $correlationId from " +
               s"controller $controllerId epoch $controllerEpoch for partition ${partition.topicPartition} " +
@@ -2353,7 +2353,7 @@ class ReplicaManager(val config: KafkaConfig,
   /**
    * Apply a KRaft topic change delta.
    *
-   * @param newImage        The new metadata image.
+   * @param newImage        The new remoteLogMetadata image.
    * @param delta           The delta to apply.
    */
   def applyDelta(newImage: MetadataImage, delta: TopicsDelta): Unit = {

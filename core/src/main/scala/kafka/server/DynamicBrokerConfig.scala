@@ -952,7 +952,7 @@ class DynamicListenerConfig(server: KafkaBroker) extends BrokerReconfigurable wi
   def validateReconfiguration(newConfig: KafkaConfig): Unit = {
     val oldConfig = server.config
     if (!oldConfig.requiresZookeeper) {
-      throw new ConfigException("Dynamic reconfiguration of listeners is not yet supported when using a Raft-based metadata quorum")
+      throw new ConfigException("Dynamic reconfiguration of listeners is not yet supported when using a Raft-based remoteLogMetadata quorum")
     }
     val newListeners = listenersToMap(newConfig.listeners)
     val newAdvertisedListeners = listenersToMap(newConfig.advertisedListeners)

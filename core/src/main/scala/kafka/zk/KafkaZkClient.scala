@@ -2043,7 +2043,7 @@ class KafkaZkClient private[zk] (zooKeeperClient: ZooKeeperClient,
     while (remainingRequests.nonEmpty) {
       val batchResponses = zooKeeperClient.handleRequests(remainingRequests)
 
-      batchResponses.foreach(response => latencyMetric.update(response.metadata.responseTimeMs))
+      batchResponses.foreach(response => latencyMetric.update(response.remoteLogMetadata.responseTimeMs))
 
       // Only execute slow path if we find a response with CONNECTIONLOSS
       if (batchResponses.exists(_.resultCode == Code.CONNECTIONLOSS)) {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package kafka.server.metadata
+package kafka.server.remoteLogMetadata
 
 import kafka.network.ConnectionQuotas
 import kafka.server.ConfigEntityName
@@ -46,10 +46,10 @@ case class DefaultUserExplicitClientIdEntity(clientId: String) extends QuotaEnti
 case object DefaultUserDefaultClientIdEntity extends QuotaEntity
 
 /**
- * Process quota metadata records as they appear in the metadata log and update quota managers and cache as necessary
+ * Process quota remoteLogMetadata records as they appear in the remoteLogMetadata log and update quota managers and cache as necessary
  */
-class ClientQuotaMetadataManager(private[metadata] val quotaManagers: QuotaManagers,
-                                 private[metadata] val connectionQuotas: ConnectionQuotas) extends Logging {
+class ClientQuotaMetadataManager(private[remoteLogMetadata] val quotaManagers: QuotaManagers,
+                                 private[remoteLogMetadata] val connectionQuotas: ConnectionQuotas) extends Logging {
 
   def update(quotasDelta: ClientQuotasDelta): Unit = {
     quotasDelta.changes().entrySet().forEach { e =>

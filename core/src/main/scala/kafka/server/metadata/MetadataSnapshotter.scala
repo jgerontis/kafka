@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package kafka.server.metadata
+package kafka.server.remoteLogMetadata
 
 import org.apache.kafka.image.MetadataImage
 
@@ -26,10 +26,10 @@ trait MetadataSnapshotter {
   /**
    * If there is no other snapshot being written out, start writing out a snapshot.
    *
-   * @param committedOffset       The highest metadata log offset of the snapshot.
-   * @param committedEpoch        The highest metadata log epoch of the snapshot.
+   * @param committedOffset       The highest remoteLogMetadata log offset of the snapshot.
+   * @param committedEpoch        The highest remoteLogMetadata log epoch of the snapshot.
    * @param lastContainedLogTime  The highest time contained in the snapshot.
-   * @param image                 The metadata image to write out.
+   * @param image                 The remoteLogMetadata image to write out.
    *
    * @return                      True if we will write out a new snapshot; false otherwise.
    */

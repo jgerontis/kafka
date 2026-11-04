@@ -33,7 +33,7 @@ import kafka.metrics.{KafkaMetricsReporter, KafkaYammerMetrics}
 import kafka.network.SocketServer
 import kafka.security.CredentialProvider
 import kafka.server.KafkaServer.{EXPONENTIAL_BACKOFF_JITTER, EXPONENTIAL_BACKOFF_MAX_INTERVAL_MS, EXPONENTIAL_BACKOFF_MULTIPLIER}
-import kafka.server.metadata.ZkConfigRepository
+import kafka.server.remoteLogMetadata.ZkConfigRepository
 import kafka.utils._
 import kafka.zk.{AdminZkClient, BrokerInfo, KafkaZkClient}
 import org.apache.kafka.clients.{ApiVersions, ManualMetadataUpdater, NetworkClient, NetworkClientUtils}
@@ -49,7 +49,7 @@ import org.apache.kafka.common.security.token.delegation.internals.DelegationTok
 import org.apache.kafka.common.security.{JaasContext, JaasUtils}
 import org.apache.kafka.common.utils.{AppInfoParser, ExponentialBackoff, LogContext, PoisonPill, Time, Utils}
 import org.apache.kafka.common.{Endpoint, Node, TopicPartition}
-import org.apache.kafka.metadata.BrokerState
+import org.apache.kafka.remoteLogMetadata.BrokerState
 import org.apache.kafka.server.authorizer.Authorizer
 import org.apache.kafka.server.log.remote.storage.RemoteLogManagerConfig
 import org.apache.zookeeper.client.ZKClientConfig
@@ -268,7 +268,7 @@ class KafkaServer(
         _clusterId = getOrGenerateClusterId(zkClient)
         info(s"Cluster ID = ${clusterId}")
 
-        /* load metadata */
+        /* load remoteLogMetadata */
         val (preloadedBrokerMetadataCheckpoint, initialOfflineDirs) =
           BrokerMetadataCheckpoint.getBrokerMetadataAndOfflineDirs(config.logDirs, ignoreMissing = true)
 
@@ -414,7 +414,7 @@ class KafkaServer(
                                       period = 10000,
                                       unit = TimeUnit.MILLISECONDS)
 
-        // Now that the broker is successfully registered, checkpoint its metadata
+        // Now that the broker is successfully registered, checkpoint its remoteLogMetadata
         checkpointBrokerMetadata(ZkMetaProperties(clusterId, config.brokerId))
 
         /* start token manager */
@@ -708,10 +708,10 @@ class KafkaServer(
                     metadataUpdater.setNodes(Seq(prevController).asJava)
                   }
                 case None =>
-                  info(s"Broker registration for controller $controllerId is not available in the metadata cache")
+                  info(s"Broker registration for controller $controllerId is not available in the remoteLogMetadata cache")
               }
             case None =>
-              info("No controller present in the metadata cache")
+              info("No controller present in the remoteLogMetadata cache")
           }
 
           // 2. issue a controlled shutdown to the controller
@@ -824,7 +824,7 @@ class KafkaServer(
           CoreUtils.swallow(dynamicConfigManager.shutdown(), this)
 
         // Close remote log manager before stopping processing requests, to give a change to any
-        // of its underlying clients (especially in the remote metadata manager) to close gracefully.
+        // of its underlying clients (especially in the remote remoteLogMetadata manager) to close gracefully.
         if (remoteLogManager != null) {
           CoreUtils.swallow(remoteLogManager.close(), this)
         }

@@ -496,7 +496,7 @@ class TopicCommandIntegrationTest extends KafkaServerTestHarness with Logging wi
 
       killBroker(0)
 
-      // wait until the topic metadata for the test topic is propagated to each alive broker
+      // wait until the topic remoteLogMetadata for the test topic is propagated to each alive broker
       TestUtils.waitUntilTrue(() => {
         servers
           .filterNot(_.config.brokerId == 0)
@@ -506,12 +506,12 @@ class TopicCommandIntegrationTest extends KafkaServerTestHarness with Logging wi
                 .getTopicMetadata(Set(testTopicName), ListenerName.forSecurityProtocol(SecurityProtocol.PLAINTEXT))
               val testPartitionMetadata = topicMetadatas.find(_.name.equals(testTopicName)).get.partitions.asScala.find(_.partitionIndex == partitionOnBroker0)
               testPartitionMetadata match {
-                case None => throw new AssertionError(s"Partition metadata is not found in metadata cache")
-                case Some(metadata) => result && metadata.errorCode == Errors.LEADER_NOT_AVAILABLE.code
+                case None => throw new AssertionError(s"Partition remoteLogMetadata is not found in remoteLogMetadata cache")
+                case Some(remoteLogMetadata) => result && remoteLogMetadata.errorCode == Errors.LEADER_NOT_AVAILABLE.code
               }
             }
           }
-      }, s"Partition metadata for $testTopicName is not propagated")
+      }, s"Partition remoteLogMetadata for $testTopicName is not propagated")
 
       // grab the console output and assert
       val output = TestUtils.grabConsoleOutput(

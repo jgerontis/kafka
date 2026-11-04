@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import java.util.Properties
 
-import kafka.server.metadata.ZkConfigRepository
+import kafka.server.remoteLogMetadata.ZkConfigRepository
 
 import scala.jdk.CollectionConverters._
 

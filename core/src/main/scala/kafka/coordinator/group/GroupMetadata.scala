@@ -62,7 +62,7 @@ private[group] case object PreparingRebalance extends GroupState {
  *         park sync group requests from followers until transition to Stable
  *         allow offset fetch requests
  * transition: sync group with state assignment received from leader => Stable
- *             join group from new member or existing member with updated metadata => PreparingRebalance
+ *             join group from new member or existing member with updated remoteLogMetadata => PreparingRebalance
  *             leave group from existing member => PreparingRebalance
  *             member failure detected => PreparingRebalance
  *             group is removed by partition emigration => Dead
@@ -76,13 +76,13 @@ private[group] case object CompletingRebalance extends GroupState {
  *
  * action: respond to member heartbeats normally
  *         respond to sync group from any member with current assignment
- *         respond to join group from followers with matching metadata with current group metadata
+ *         respond to join group from followers with matching remoteLogMetadata with current group remoteLogMetadata
  *         allow offset commits from member of current generation
  *         allow offset fetch requests
  * transition: member failure detected via heartbeat => PreparingRebalance
  *             leave group from existing member => PreparingRebalance
  *             leader join-group received => PreparingRebalance
- *             follower join-group with new metadata => PreparingRebalance
+ *             follower join-group with new remoteLogMetadata => PreparingRebalance
  *             group is removed by partition emigration => Dead
  */
 private[group] case object Stable extends GroupState {
@@ -90,7 +90,7 @@ private[group] case object Stable extends GroupState {
 }
 
 /**
- * Group has no more members and its metadata is being removed
+ * Group has no more members and its remoteLogMetadata is being removed
  *
  * action: respond to join group with UNKNOWN_MEMBER_ID
  *         respond to sync group with UNKNOWN_MEMBER_ID
@@ -98,7 +98,7 @@ private[group] case object Stable extends GroupState {
  *         respond to leave group with UNKNOWN_MEMBER_ID
  *         respond to offset commit with UNKNOWN_MEMBER_ID
  *         allow offset fetch requests
- * transition: Dead is a final state before group metadata is cleaned up, so there are no transitions
+ * transition: Dead is a final state before group remoteLogMetadata is cleaned up, so there are no transitions
  */
 private[group] case object Dead extends GroupState {
   val validPreviousStates: Set[GroupState] = Set(Stable, PreparingRebalance, CompletingRebalance, Empty, Dead)
@@ -153,14 +153,14 @@ private object GroupMetadata extends Logging {
 }
 
 /**
- * Case class used to represent group metadata for the ListGroups API
+ * Case class used to represent group remoteLogMetadata for the ListGroups API
  */
 case class GroupOverview(groupId: String,
                          protocolType: String,
                          state: String)
 
 /**
- * Case class used to represent group metadata for the DescribeGroup API
+ * Case class used to represent group remoteLogMetadata for the DescribeGroup API
  */
 case class GroupSummary(state: String,
                         protocolType: String,
@@ -178,14 +178,14 @@ case class CommitRecordMetadataAndOffset(appendedBatchOffset: Option[Long], offs
 }
 
 /**
- * Group contains the following metadata:
+ * Group contains the following remoteLogMetadata:
  *
- *  Membership metadata:
+ *  Membership remoteLogMetadata:
  *  1. Members registered in this group
  *  2. Current protocol assigned to the group (e.g. partition assignment strategy for consumers)
- *  3. Protocol metadata associated with group members
+ *  3. Protocol remoteLogMetadata associated with group members
  *
- *  State metadata:
+ *  State remoteLogMetadata:
  *  1. group state
  *  2. generation id
  *  3. leader id
@@ -494,7 +494,7 @@ private[group] class GroupMetadata(val groupId: String, initialState: GroupState
    * to 'consumer'. None is returned if
    * - the protocol type is not equal to 'consumer';
    * - the protocol is not defined yet; or
-   * - the protocol metadata does not comply with the schema.
+   * - the protocol remoteLogMetadata does not comply with the schema.
    */
   private[group] def computeSubscribedTopics(): Option[Set[String]] = {
     protocolType match {
@@ -505,7 +505,7 @@ private[group] class GroupMetadata(val groupId: String, initialState: GroupState
               // The consumer protocol is parsed with V0 which is the based prefix of all versions.
               // This way the consumer group manager does not depend on any specific existing or
               // future versions of the consumer protocol. VO must prefix all new versions.
-              val buffer = ByteBuffer.wrap(member.metadata(protocolName.get))
+              val buffer = ByteBuffer.wrap(member.remoteLogMetadata(protocolName.get))
               ConsumerProtocol.deserializeVersion(buffer)
               ConsumerProtocol.deserializeSubscription(buffer, 0).topics.asScala.toSet
             }.reduceLeft(_ ++ _)
@@ -581,11 +581,11 @@ private[group] class GroupMetadata(val groupId: String, initialState: GroupState
 
   def currentMemberMetadata: List[JoinGroupResponseMember] = {
     if (is(Dead) || is(PreparingRebalance))
-      throw new IllegalStateException("Cannot obtain member metadata for group in state %s".format(state))
+      throw new IllegalStateException("Cannot obtain member remoteLogMetadata for group in state %s".format(state))
     members.map{ case (memberId, memberMetadata) => new JoinGroupResponseMember()
         .setMemberId(memberId)
         .setGroupInstanceId(memberMetadata.groupInstanceId.orNull)
-        .setMetadata(memberMetadata.metadata(protocolName.get))
+        .setMetadata(memberMetadata.remoteLogMetadata(protocolName.get))
     }.toList
   }
 
@@ -616,7 +616,7 @@ private[group] class GroupMetadata(val groupId: String, initialState: GroupState
   def onOffsetCommitAppend(topicPartition: TopicPartition, offsetWithCommitRecordMetadata: CommitRecordMetadataAndOffset): Unit = {
     if (pendingOffsetCommits.contains(topicPartition)) {
       if (offsetWithCommitRecordMetadata.appendedBatchOffset.isEmpty)
-        throw new IllegalStateException("Cannot complete offset commit write without providing the metadata of the record " +
+        throw new IllegalStateException("Cannot complete offset commit write without providing the remoteLogMetadata of the record " +
           "in the log.")
       if (!offsets.contains(topicPartition) || offsets(topicPartition).olderThan(offsetWithCommitRecordMetadata))
         offsets.put(topicPartition, offsetWithCommitRecordMetadata)
@@ -767,7 +767,7 @@ private[group] class GroupMetadata(val groupId: String, initialState: GroupState
         // no consumer exists in the group =>
         // - if current state timestamp exists and retention period has passed since group became Empty,
         //   expire all offsets with no pending offset commit;
-        // - if there is no current state timestamp (old group metadata schema) and retention period has passed
+        // - if there is no current state timestamp (old group remoteLogMetadata schema) and retention period has passed
         //   since the last commit timestamp, expire the offset
         getExpiredOffsets(
           commitRecordMetadataAndOffset => currentStateTimestamp

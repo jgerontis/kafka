@@ -55,9 +55,9 @@ abstract class KafkaServerTestHarness extends ZooKeeperTestHarness {
    *
    * This is required in some cases because of the topic creation in the setup of `IntegrationTestHarness`. If the ACLs
    * are only set later, tests may fail. The failure could manifest itself as a cluster action
-   * authorization exception when processing an update metadata request (controller -> broker) or in more obscure
-   * ways (e.g. __consumer_offsets topic replication fails because the metadata cache has no brokers as a previous
-   * update metadata request failed due to an authorization exception).
+   * authorization exception when processing an update remoteLogMetadata request (controller -> broker) or in more obscure
+   * ways (e.g. __consumer_offsets topic replication fails because the remoteLogMetadata cache has no brokers as a previous
+   * update remoteLogMetadata request failed due to an authorization exception).
    *
    * The default implementation of this method is a no-op.
    */
@@ -125,7 +125,7 @@ abstract class KafkaServerTestHarness extends ZooKeeperTestHarness {
 
   /**
    * Create a topic in ZooKeeper.
-   * Wait until the leader is elected and the metadata is propagated to all brokers.
+   * Wait until the leader is elected and the remoteLogMetadata is propagated to all brokers.
    * Return the leader for each partition.
    */
   def createTopic(topic: String, numPartitions: Int = 1, replicationFactor: Int = 1,
@@ -134,7 +134,7 @@ abstract class KafkaServerTestHarness extends ZooKeeperTestHarness {
 
   /**
    * Create a topic in ZooKeeper using a customized replica assignment.
-   * Wait until the leader is elected and the metadata is propagated to all brokers.
+   * Wait until the leader is elected and the remoteLogMetadata is propagated to all brokers.
    * Return the leader for each partition.
    */
   def createTopic(topic: String, partitionReplicaAssignment: collection.Map[Int, Seq[Int]]): scala.collection.immutable.Map[Int, Int] =

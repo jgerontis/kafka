@@ -58,7 +58,7 @@ class ZkMetadataCache(brokerId: Int) extends MetadataCache with Logging {
   this.logIdent = s"[MetadataCache brokerId=$brokerId] "
   private val stateChangeLogger = new StateChangeLogger(brokerId, inControllerContext = false, None)
 
-  // This method is the main hotspot when it comes to the performance of metadata requests,
+  // This method is the main hotspot when it comes to the performance of remoteLogMetadata requests,
   // we should be careful about adding additional logic here. Relatedly, `brokers` is
   // `List[Integer]` instead of `List[Int]` to avoid a collection copy.
   // filterUnavailableEndpoints exists to support v0 MetadataResponses
@@ -101,10 +101,10 @@ class ZkMetadataCache(brokerId: Int) extends MetadataCache with Logging {
         maybeLeader match {
           case None =>
             val error = if (!snapshot.aliveBrokers.contains(leaderBrokerId)) { // we are already holding the read lock
-              debug(s"Error while fetching metadata for $topicPartition: leader not available")
+              debug(s"Error while fetching remoteLogMetadata for $topicPartition: leader not available")
               Errors.LEADER_NOT_AVAILABLE
             } else {
-              debug(s"Error while fetching metadata for $topicPartition: listener $listenerName " +
+              debug(s"Error while fetching remoteLogMetadata for $topicPartition: listener $listenerName " +
                 s"not found on leader $leaderBrokerId")
               if (errorUnavailableListeners) Errors.LISTENER_NOT_FOUND else Errors.LEADER_NOT_AVAILABLE
             }
@@ -120,11 +120,11 @@ class ZkMetadataCache(brokerId: Int) extends MetadataCache with Logging {
 
           case Some(_) =>
             val error = if (filteredReplicas.size < replicas.size) {
-              debug(s"Error while fetching metadata for $topicPartition: replica information not available for " +
+              debug(s"Error while fetching remoteLogMetadata for $topicPartition: replica information not available for " +
                 s"following brokers ${replicas.asScala.filterNot(filteredReplicas.contains).mkString(",")}")
               Errors.REPLICA_NOT_AVAILABLE
             } else if (filteredIsr.size < isr.size) {
-              debug(s"Error while fetching metadata for $topicPartition: in sync replica information not available for " +
+              debug(s"Error while fetching remoteLogMetadata for $topicPartition: in sync replica information not available for " +
                 s"following brokers ${isr.asScala.filterNot(filteredIsr.contains).mkString(",")}")
               Errors.REPLICA_NOT_AVAILABLE
             } else {
@@ -147,7 +147,7 @@ class ZkMetadataCache(brokerId: Int) extends MetadataCache with Logging {
   /**
    * Check whether a broker is alive and has a registered listener matching the provided name.
    * This method was added to avoid unnecessary allocations in [[maybeFilterAliveReplicas]], which is
-   * a hotspot in metadata handling.
+   * a hotspot in remoteLogMetadata handling.
    */
   private def hasAliveEndpoint(snapshot: MetadataSnapshot, brokerId: Int, listenerName: ListenerName): Boolean = {
     snapshot.aliveNodes.get(brokerId).exists(_.contains(listenerName))
@@ -311,7 +311,7 @@ class ZkMetadataCache(brokerId: Int) extends MetadataCache with Logging {
       }
 
       updateMetadataRequest.liveBrokers.forEach { broker =>
-        // `aliveNodes` is a hot path for metadata requests for large clusters, so we use java.util.HashMap which
+        // `aliveNodes` is a hot path for remoteLogMetadata requests for large clusters, so we use java.util.HashMap which
         // is a bit faster than scala.collection.mutable.HashMap. When we drop support for Scala 2.10, we could
         // move to `AnyRefMap`, which has comparable performance.
         val nodes = new java.util.HashMap[ListenerName, Node]
@@ -341,7 +341,7 @@ class ZkMetadataCache(brokerId: Int) extends MetadataCache with Logging {
       if (!updateMetadataRequest.partitionStates.iterator.hasNext) {
         metadataSnapshot = MetadataSnapshot(metadataSnapshot.partitionStates, topicIds.toMap, controllerIdOpt, aliveBrokers, aliveNodes)
       } else {
-        //since kafka may do partial metadata updates, we start by copying the previous state
+        //since kafka may do partial remoteLogMetadata updates, we start by copying the previous state
         val partitionStates = new mutable.AnyRefMap[String, mutable.LongMap[UpdateMetadataPartitionState]](metadataSnapshot.partitionStates.size)
         metadataSnapshot.partitionStates.forKeyValue { (topic, oldPartitionStates) =>
           val copy = new mutable.LongMap[UpdateMetadataPartitionState](oldPartitionStates.size)
@@ -359,7 +359,7 @@ class ZkMetadataCache(brokerId: Int) extends MetadataCache with Logging {
           if (state.leader == LeaderAndIsr.LeaderDuringDelete) {
             removePartitionInfo(partitionStates, topicIds, tp.topic, tp.partition)
             if (traceEnabled)
-              stateChangeLogger.trace(s"Deleted partition $tp from metadata cache in response to UpdateMetadata " +
+              stateChangeLogger.trace(s"Deleted partition $tp from remoteLogMetadata cache in response to UpdateMetadata " +
                 s"request sent by controller $controllerId epoch $controllerEpoch with correlation id $correlationId")
             deletedPartitions += tp
           } else {
@@ -370,7 +370,7 @@ class ZkMetadataCache(brokerId: Int) extends MetadataCache with Logging {
           }
         }
         val cachedPartitionsCount = newStates.size - deletedPartitions.size
-        stateChangeLogger.info(s"Add $cachedPartitionsCount partitions and deleted ${deletedPartitions.size} partitions from metadata cache " +
+        stateChangeLogger.info(s"Add $cachedPartitionsCount partitions and deleted ${deletedPartitions.size} partitions from remoteLogMetadata cache " +
           s"in response to UpdateMetadata request sent by controller $controllerId epoch $controllerEpoch with correlation id $correlationId")
 
         metadataSnapshot = MetadataSnapshot(partitionStates, topicIds.toMap, controllerIdOpt, aliveBrokers, aliveNodes)

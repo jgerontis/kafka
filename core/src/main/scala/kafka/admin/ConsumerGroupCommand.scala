@@ -355,7 +355,7 @@ object ConsumerGroupCommand extends Logging {
     }
 
     def describeGroups(): Unit = {
-      val groupIds =
+      val keys =
         if (opts.options.has(opts.allGroupsOpt)) listConsumerGroups()
         else opts.options.valuesOf(opts.groupOpt).asScala
       val membersOptPresent = opts.options.has(opts.membersOpt)
@@ -364,13 +364,13 @@ object ConsumerGroupCommand extends Logging {
       val subActions = Seq(membersOptPresent, offsetsOptPresent, stateOptPresent).count(_ == true)
 
       if (subActions == 0 || offsetsOptPresent) {
-        val offsets = collectGroupsOffsets(groupIds)
+        val offsets = collectGroupsOffsets(keys)
         printOffsets(offsets)
       } else if (membersOptPresent) {
-        val members = collectGroupsMembers(groupIds, opts.options.has(opts.verboseOpt))
+        val members = collectGroupsMembers(keys, opts.options.has(opts.verboseOpt))
         printMembers(members, opts.options.has(opts.verboseOpt))
       } else {
-        val states = collectGroupsState(groupIds)
+        val states = collectGroupsState(keys)
         printStates(states)
       }
     }
@@ -419,12 +419,12 @@ object ConsumerGroupCommand extends Logging {
     }
 
     def resetOffsets(): Map[String, Map[TopicPartition, OffsetAndMetadata]] = {
-      val groupIds =
+      val keys =
         if (opts.options.has(opts.allGroupsOpt)) listConsumerGroups()
         else opts.options.valuesOf(opts.groupOpt).asScala
 
       val consumerGroups = adminClient.describeConsumerGroups(
-        groupIds.asJava,
+        keys.asJava,
         withTimeoutMs(new DescribeConsumerGroupsOptions)
       ).describedGroups()
 
@@ -535,9 +535,9 @@ object ConsumerGroupCommand extends Logging {
       }
     }
 
-    private[admin] def describeConsumerGroups(groupIds: Seq[String]): mutable.Map[String, ConsumerGroupDescription] = {
+    private[admin] def describeConsumerGroups(keys: Seq[String]): mutable.Map[String, ConsumerGroupDescription] = {
       adminClient.describeConsumerGroups(
-        groupIds.asJava,
+        keys.asJava,
         withTimeoutMs(new DescribeConsumerGroupsOptions)
       ).describedGroups().asScala.map {
         case (groupId, groupDescriptionFuture) => (groupId, groupDescriptionFuture.get())
@@ -554,8 +554,8 @@ object ConsumerGroupCommand extends Logging {
     /**
       * Returns states of the specified consumer groups and partition assignment states
       */
-    def collectGroupsOffsets(groupIds: Seq[String]): TreeMap[String, (Option[String], Option[Seq[PartitionAssignmentState]])] = {
-      val consumerGroups = describeConsumerGroups(groupIds)
+    def collectGroupsOffsets(keys: Seq[String]): TreeMap[String, (Option[String], Option[Seq[PartitionAssignmentState]])] = {
+      val consumerGroups = describeConsumerGroups(keys)
 
       val groupOffsets = TreeMap[String, (Option[String], Option[Seq[PartitionAssignmentState]])]() ++ (for ((groupId, consumerGroup) <- consumerGroups) yield {
         val state = consumerGroup.state
@@ -594,8 +594,8 @@ object ConsumerGroupCommand extends Logging {
       collectGroupsMembers(Seq(groupId), verbose)(groupId)
     }
 
-    private[admin] def collectGroupsMembers(groupIds: Seq[String], verbose: Boolean): TreeMap[String, (Option[String], Option[Seq[MemberAssignmentState]])] = {
-      val consumerGroups = describeConsumerGroups(groupIds)
+    private[admin] def collectGroupsMembers(keys: Seq[String], verbose: Boolean): TreeMap[String, (Option[String], Option[Seq[MemberAssignmentState]])] = {
+      val consumerGroups = describeConsumerGroups(keys)
       TreeMap[String, (Option[String], Option[Seq[MemberAssignmentState]])]() ++ (for ((groupId, consumerGroup) <- consumerGroups) yield {
         val state = consumerGroup.state.toString
         val memberAssignmentStates = consumerGroup.members().asScala.map(consumer =>
@@ -616,8 +616,8 @@ object ConsumerGroupCommand extends Logging {
       collectGroupsState(Seq(groupId))(groupId)
     }
 
-    private[admin] def collectGroupsState(groupIds: Seq[String]): TreeMap[String, GroupState] = {
-      val consumerGroups = describeConsumerGroups(groupIds)
+    private[admin] def collectGroupsState(keys: Seq[String]): TreeMap[String, GroupState] = {
+      val consumerGroups = describeConsumerGroups(keys)
       TreeMap[String, GroupState]() ++ (for ((groupId, groupDescription) <- consumerGroups) yield {
         groupId -> GroupState(
           groupId,
@@ -924,12 +924,12 @@ object ConsumerGroupCommand extends Logging {
     }
 
     def deleteGroups(): Map[String, Throwable] = {
-      val groupIds =
+      val keys =
         if (opts.options.has(opts.allGroupsOpt)) listConsumerGroups()
         else opts.options.valuesOf(opts.groupOpt).asScala
 
       val groupsToDelete = adminClient.deleteConsumerGroups(
-        groupIds.asJava,
+        keys.asJava,
         withTimeoutMs(new DeleteConsumerGroupsOptions)
       ).deletedGroups().asScala
 

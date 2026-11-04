@@ -302,7 +302,7 @@ class TopicDeletionManager(config: KafkaConfig,
       controllerContext.beginTopicDeletion(unseenTopicsForDeletion)
     }
 
-    // send update metadata so that brokers stop serving data for topics to be deleted
+    // send update remoteLogMetadata so that brokers stop serving data for topics to be deleted
     client.sendMetadataUpdate(topics.flatMap(controllerContext.partitionsForTopic))
 
     onPartitionDeletion(topics)

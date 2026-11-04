@@ -273,7 +273,7 @@ object BrokerApiVersionsCommand {
       val logContext = new LogContext(s"[LegacyAdminClient clientId=$clientId] ")
       val time = Time.SYSTEM
       val metrics = new Metrics(time)
-      val metadata = new Metadata(100L, 60 * 60 * 1000L, logContext,
+      val remoteLogMetadata = new Metadata(100L, 60 * 60 * 1000L, logContext,
         new ClusterResourceListeners)
       val channelBuilder = ClientUtils.createChannelBuilder(config, time, logContext)
       val requestTimeoutMs = config.getInt(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG)
@@ -284,7 +284,7 @@ object BrokerApiVersionsCommand {
       val brokerUrls = config.getList(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
       val clientDnsLookup = config.getString(CommonClientConfigs.CLIENT_DNS_LOOKUP_CONFIG)
       val brokerAddresses = ClientUtils.parseAndValidateAddresses(brokerUrls, clientDnsLookup)
-      metadata.bootstrap(brokerAddresses)
+      remoteLogMetadata.bootstrap(brokerAddresses)
 
       val selector = new Selector(
         DefaultConnectionMaxIdleMs,
@@ -296,7 +296,7 @@ object BrokerApiVersionsCommand {
 
       val networkClient = new NetworkClient(
         selector,
-        metadata,
+        remoteLogMetadata,
         clientId,
         DefaultMaxInFlightRequestsPerConnection,
         DefaultReconnectBackoffMs,
@@ -314,7 +314,7 @@ object BrokerApiVersionsCommand {
       val highLevelClient = new ConsumerNetworkClient(
         logContext,
         networkClient,
-        metadata,
+        remoteLogMetadata,
         time,
         retryBackoffMs,
         requestTimeoutMs,
@@ -323,7 +323,7 @@ object BrokerApiVersionsCommand {
       new AdminClient(
         time,
         highLevelClient,
-        metadata.fetch.nodes.asScala.toList)
+        remoteLogMetadata.fetch.nodes.asScala.toList)
     }
   }
 

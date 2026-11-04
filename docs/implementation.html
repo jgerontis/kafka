@@ -97,7 +97,7 @@ Value: byte[]</code></pre>
 
     <h4 class="anchor-heading"><a id="messageset" class="anchor-link"></a><a href="#messageset">5.3.3 Old Message Format</a></h4>
     <p>
-        Prior to Kafka 0.11, messages were transferred and stored in <i>message sets</i>. In a message set, each message has its own metadata. Note that although message sets are represented as an array,
+        Prior to Kafka 0.11, messages were transferred and stored in <i>message sets</i>. In a message set, each message has its own remoteLogMetadata. Note that although message sets are represented as an array,
         they are not preceded by an int32 array size like other array elements in the protocol.
     </p>
 

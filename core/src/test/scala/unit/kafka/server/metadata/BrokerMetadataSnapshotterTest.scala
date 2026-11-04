@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package kafka.server.metadata
+package kafka.server.remoteLogMetadata
 
 import java.nio.ByteBuffer
 import java.util.Optional
@@ -26,7 +26,7 @@ import org.apache.kafka.common.protocol.ByteBufferAccessor
 import org.apache.kafka.common.record.{CompressionType, MemoryRecords}
 import org.apache.kafka.common.utils.Time
 import org.apache.kafka.image.{MetadataDelta, MetadataImage, MetadataImageTest}
-import org.apache.kafka.metadata.MetadataRecordSerde
+import org.apache.kafka.remoteLogMetadata.MetadataRecordSerde
 import org.apache.kafka.queue.EventQueue
 import org.apache.kafka.raft.OffsetAndEpoch
 import org.apache.kafka.server.common.ApiMessageAndVersion

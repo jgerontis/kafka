@@ -97,7 +97,7 @@ class LeaderElectionTest extends ZooKeeperTestHarness {
     //make sure second server joins the ISR
     TestUtils.waitUntilTrue(() => {
       servers.last.metadataCache.getPartitionInfo(topic, partitionId).exists(_.isr.size == 2)
-    }, "Inconsistent metadata after second broker startup")
+    }, "Inconsistent remoteLogMetadata after second broker startup")
 
     servers.last.shutdown()
 

@@ -156,7 +156,7 @@ class TransactionCoordinatorConcurrencyTest extends AbstractCoordinatorConcurren
   /**
     * Concurrently load one set of transaction state topic partitions and unload another
     * set of partitions. This tests partition leader changes of transaction state topic
-    * that are handled by different threads concurrently. Verifies that the metadata of
+    * that are handled by different threads concurrently. Verifies that the remoteLogMetadata of
     * unloaded partitions are removed from the transaction manager and that the transactions
     * from the newly loaded partitions are loaded correctly.
     */
@@ -417,11 +417,11 @@ class TransactionCoordinatorConcurrencyTest extends AbstractCoordinatorConcurren
   }
 
   private def verifyTransaction(txn: Transaction, expectedState: TransactionState): Unit = {
-    val (metadata, success) = TestUtils.computeUntilTrue({
+    val (remoteLogMetadata, success) = TestUtils.computeUntilTrue({
       enableCompletion()
       transactionMetadata(txn)
-    })(metadata => metadata.nonEmpty && metadata.forall(m => m.state == expectedState && m.pendingState.isEmpty))
-    assertTrue(success, s"Invalid metadata state $metadata")
+    })(remoteLogMetadata => remoteLogMetadata.nonEmpty && remoteLogMetadata.forall(m => m.state == expectedState && m.pendingState.isEmpty))
+    assertTrue(success, s"Invalid remoteLogMetadata state $remoteLogMetadata")
   }
 
   private def transactionMetadata(txn: Transaction): Option[TransactionMetadata] = {
@@ -431,8 +431,8 @@ class TransactionCoordinatorConcurrencyTest extends AbstractCoordinatorConcurren
           None
         else
           throw new AssertionError(s"Unexpected transaction error $error for $txn")
-      case Right(Some(metadata)) =>
-        Some(metadata.transactionMetadata)
+      case Right(Some(remoteLogMetadata)) =>
+        Some(remoteLogMetadata.transactionMetadata)
       case Right(None) =>
         None
     }
@@ -593,7 +593,7 @@ class TransactionCoordinatorConcurrencyTest extends AbstractCoordinatorConcurren
     override def await(): Unit = {
       allTransactions.foreach { txn =>
         if (txnStateManager.partitionFor(txn.transactionalId) == txnTopicPartitionId)
-          assertTrue(transactionMetadata(txn).isEmpty, "Transaction metadata not removed")
+          assertTrue(transactionMetadata(txn).isEmpty, "Transaction remoteLogMetadata not removed")
       }
     }
   }

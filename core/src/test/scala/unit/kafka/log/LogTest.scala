@@ -1465,7 +1465,7 @@ class LogTest {
       () => "Should have received an OutOfOrderSequenceException since we attempted to append a duplicate of a records in the middle of the log.")
 
     // Append a duplicate of the batch which is 4th from the tail. This should succeed without error since we
-    // retain the batch metadata of the last 5 batches.
+    // retain the batch remoteLogMetadata of the last 5 batches.
     val duplicateOfFourth = TestUtils.records(List(new SimpleRecord(mockTime.milliseconds, "key".getBytes, "value".getBytes)),
       producerId = pid, producerEpoch = epoch, sequence = 2)
     log.appendAsLeader(duplicateOfFourth, leaderEpoch = 0)
@@ -2299,7 +2299,7 @@ class LogTest {
     // Should trigger a synchronous flush
     log.close()
 
-    // We open the log again, and the partition metadata file should exist with the same ID.
+    // We open the log again, and the partition remoteLogMetadata file should exist with the same ID.
     log = createLog(logDir, logConfig)
     assertTrue(log.partitionMetadataFile.get.exists())
     assertEquals(topicId, log.partitionMetadataFile.get.read().topicId)
@@ -2699,14 +2699,14 @@ class LogTest {
     val logConfig = LogTestUtils.createLogConfig(segmentBytes = 1000, indexIntervalBytes = 1, maxMessageBytes = 64 * 1024)
     val log = createLog(logDir, logConfig)
 
-    // Write a topic ID to the partition metadata file to ensure it is transferred correctly.
+    // Write a topic ID to the partition remoteLogMetadata file to ensure it is transferred correctly.
     val topicId = Uuid.randomUuid()
     log.assignTopicId(topicId)
 
     log.appendAsLeader(TestUtils.records(List(new SimpleRecord("foo".getBytes()))), leaderEpoch = 5)
     assertEquals(Some(5), log.latestEpoch)
 
-    // Ensure that after a directory rename, the partition metadata file is written to the right location.
+    // Ensure that after a directory rename, the partition remoteLogMetadata file is written to the right location.
     val tp = Log.parseTopicPartitionName(log.dir)
     log.renameDir(Log.logDeleteDirName(tp), true)
     log.appendAsLeader(TestUtils.records(List(new SimpleRecord("foo".getBytes()))), leaderEpoch = 10)
@@ -2725,11 +2725,11 @@ class LogTest {
     val logConfig = LogTestUtils.createLogConfig(segmentBytes = 1000, indexIntervalBytes = 1, maxMessageBytes = 64 * 1024)
     val log = createLog(logDir, logConfig)
 
-    // Write a topic ID to the partition metadata file to ensure it is transferred correctly.
+    // Write a topic ID to the partition remoteLogMetadata file to ensure it is transferred correctly.
     val topicId = Uuid.randomUuid()
     log.partitionMetadataFile.get.record(topicId)
 
-    // Ensure that after a directory rename, the partition metadata file is written to the right location.
+    // Ensure that after a directory rename, the partition remoteLogMetadata file is written to the right location.
     val tp = Log.parseTopicPartitionName(log.dir)
     log.renameDir(Log.logDeleteDirName(tp), true)
     assertTrue(PartitionMetadataFile.newFile(log.dir).exists())

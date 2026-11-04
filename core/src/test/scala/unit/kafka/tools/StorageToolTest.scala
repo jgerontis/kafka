@@ -118,7 +118,7 @@ Found problem:
       assertEquals(s"""Found log directory:
   ${tempDir.toString}
 
-Found metadata: {cluster.id=XcZZOzUqS4yHOjhMQB6JLQ, version=1}
+Found remoteLogMetadata: {cluster.id=XcZZOzUqS4yHOjhMQB6JLQ, version=1}
 
 Found problem:
   The kafka configuration file appears to be for a legacy cluster, but the directories are formatted for a cluster in KRaft mode.
@@ -143,7 +143,7 @@ Found problem:
       assertEquals(s"""Found log directory:
   ${tempDir.toString}
 
-Found metadata: {broker.id=1, cluster.id=26c36907-4158-4a35-919d-6534229f5241, version=0}
+Found remoteLogMetadata: {broker.id=1, cluster.id=26c36907-4158-4a35-919d-6534229f5241, version=0}
 
 Found problem:
   The kafka configuration file appears to be for a cluster in KRaft mode, but the directories are formatted for legacy mode.

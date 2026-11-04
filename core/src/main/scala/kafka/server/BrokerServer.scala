@@ -33,7 +33,7 @@ import kafka.network.SocketServer
 import kafka.raft.RaftManager
 import kafka.security.CredentialProvider
 import kafka.server.KafkaRaftServer.ControllerRole
-import kafka.server.metadata.{BrokerMetadataListener, BrokerMetadataPublisher, BrokerMetadataSnapshotter, ClientQuotaMetadataManager, KRaftMetadataCache, SnapshotWriterBuilder}
+import kafka.server.remoteLogMetadata.{BrokerMetadataListener, BrokerMetadataPublisher, BrokerMetadataSnapshotter, ClientQuotaMetadataManager, KRaftMetadataCache, SnapshotWriterBuilder}
 import kafka.utils.{CoreUtils, KafkaScheduler}
 import org.apache.kafka.snapshot.SnapshotWriter
 import org.apache.kafka.common.message.ApiMessageType.ListenerType
@@ -45,7 +45,7 @@ import org.apache.kafka.common.security.scram.internals.ScramMechanism
 import org.apache.kafka.common.security.token.delegation.internals.DelegationTokenCache
 import org.apache.kafka.common.utils.{AppInfoParser, LogContext, Time, Utils}
 import org.apache.kafka.common.{ClusterResource, Endpoint, TopicPartition}
-import org.apache.kafka.metadata.{BrokerState, VersionRange}
+import org.apache.kafka.remoteLogMetadata.{BrokerState, VersionRange}
 import org.apache.kafka.raft.{RaftClient, RaftConfig}
 import org.apache.kafka.raft.RaftConfig.AddressSpec
 import org.apache.kafka.server.authorizer.Authorizer
@@ -203,7 +203,7 @@ class BrokerServer(
       metadataCache = MetadataCache.kRaftMetadataCache(config.nodeId)
 
       // Create log manager, but don't start it because we need to delay any potential unclean shutdown log recovery
-      // until we catch up on the metadata log and have up-to-date topic and broker configs.
+      // until we catch up on the remoteLogMetadata log and have up-to-date topic and broker configs.
       val remoteLogManagerConfig = new RemoteLogManagerConfig(config)
       logManager = LogManager(config, initialOfflineDirs, metadataCache, kafkaScheduler, time,
         brokerTopicStats, logDirFailureChannel, keepPartitionMetadataFile = true, remoteLogManagerConfig)
@@ -311,7 +311,7 @@ class BrokerServer(
         config, Some(clientToControllerChannelManager), None, None,
         groupCoordinator, transactionCoordinator)
 
-      /* Add all reconfigurables for config change notification before starting the metadata listener */
+      /* Add all reconfigurables for config change notification before starting the remoteLogMetadata listener */
       config.dynamicConfig.addReconfigurables(this)
 
       dynamicConfigHandlers = Map[String, ConfigHandler](
@@ -347,7 +347,7 @@ class BrokerServer(
           "heartbeat", threadNamePrefix, config.brokerSessionTimeoutMs.toLong),
         metaProps.clusterId, networkListeners, supportedFeatures)
 
-      // Register a listener with the Raft layer to receive metadata event notifications
+      // Register a listener with the Raft layer to receive remoteLogMetadata event notifications
       raftManager.register(metadataListener)
 
       val endpoints = new util.ArrayList[Endpoint](networkListeners.size())
@@ -403,7 +403,7 @@ class BrokerServer(
         throw new RuntimeException(KafkaConfig.ControlPlaneListenerNameProp + " is not " +
           "supported when in KRaft mode.")
       }
-      // Block until we've caught up with the latest metadata from the controller quorum.
+      // Block until we've caught up with the latest remoteLogMetadata from the controller quorum.
       lifecycleManager.initialCatchUpFuture.get()
 
       // better to start RLM (RSM and RLMM) before processing any requests so that we may avoid missing any
@@ -419,12 +419,12 @@ class BrokerServer(
         remoteLogManager.onEndpointCreated(serverEndpoint)
       }
 
-      // Apply the metadata log changes that we've accumulated.
+      // Apply the remoteLogMetadata log changes that we've accumulated.
       metadataPublisher = new BrokerMetadataPublisher(config, metadataCache,
         logManager, replicaManager, groupCoordinator, transactionCoordinator,
         clientQuotaMetadataManager, featureCache, dynamicConfigHandlers.toMap)
 
-      // Tell the metadata listener to start publishing its output, and wait for the first
+      // Tell the remoteLogMetadata listener to start publishing its output, and wait for the first
       // publish operation to complete. This first operation will initialize logManager,
       // replicaManager, groupCoordinator, and txnCoordinator. The log manager may perform
       // a potentially lengthy recovery-from-unclean-shutdown operation here, if required.
@@ -469,7 +469,7 @@ class BrokerServer(
       info("shutting down")
 
       if (config.controlledShutdownEnable) {
-        // Shut down the broker metadata listener, so that we don't get added to any
+        // Shut down the broker remoteLogMetadata listener, so that we don't get added to any
         // more ISRs.
         if (metadataListener !=  null) {
           metadataListener.beginShutdown()

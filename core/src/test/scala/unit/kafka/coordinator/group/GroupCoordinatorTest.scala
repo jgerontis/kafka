@@ -81,9 +81,9 @@ class GroupCoordinatorTest {
   private val leaderInstanceId = "leader"
   private val followerInstanceId = "follower"
   private val invalidMemberId = "invalidMember"
-  private val metadata = Array[Byte]()
-  private val protocols = List((protocolName, metadata))
-  private val protocolSuperset = List((protocolName, metadata), ("roundrobin", metadata))
+  private val remoteLogMetadata = Array[Byte]()
+  private val protocols = List((protocolName, remoteLogMetadata))
+  private val protocolSuperset = List((protocolName, remoteLogMetadata), ("roundrobin", remoteLogMetadata))
   private val requireStable = true
   private var groupPartitionId: Int = -1
 
@@ -676,10 +676,10 @@ class GroupCoordinatorTest {
     val memberId = JoinGroupRequest.UNKNOWN_MEMBER_ID
     val otherMemberId = JoinGroupRequest.UNKNOWN_MEMBER_ID
 
-    val joinGroupFuture = sendJoinGroup(groupId, memberId, protocolType, List(("range", metadata)))
+    val joinGroupFuture = sendJoinGroup(groupId, memberId, protocolType, List(("range", remoteLogMetadata)))
 
     EasyMock.reset(replicaManager)
-    val otherJoinGroupResult = dynamicJoinGroup(groupId, otherMemberId, protocolType, List(("roundrobin", metadata)))
+    val otherJoinGroupResult = dynamicJoinGroup(groupId, otherMemberId, protocolType, List(("roundrobin", remoteLogMetadata)))
     timer.advanceClock(GroupInitialRebalanceDelay + 1)
 
     val joinGroupResult = await(joinGroupFuture, 1)
@@ -915,7 +915,7 @@ class GroupCoordinatorTest {
 
     EasyMock.reset(replicaManager)
     val assignedMemberId = joinGroupResult.memberId
-    // The second join group should return immediately since we are using the same metadata during CompletingRebalance.
+    // The second join group should return immediately since we are using the same remoteLogMetadata during CompletingRebalance.
     val rejoinResponseFuture = sendJoinGroup(groupId, assignedMemberId, protocolType, protocols, Some(groupInstanceId))
     timer.advanceClock(1)
     joinGroupResult = Await.result(rejoinResponseFuture, Duration(1, TimeUnit.MILLISECONDS))
@@ -1009,7 +1009,7 @@ class GroupCoordinatorTest {
     val rebalanceResult = staticMembersJoinAndRebalance(leaderInstanceId, followerInstanceId, sessionTimeout = DefaultSessionTimeout * 2)
 
     // A static follower rejoin with changed protocol will trigger rebalance.
-    val newProtocols = List(("roundrobin", metadata))
+    val newProtocols = List(("roundrobin", remoteLogMetadata))
     // Old leader hasn't joined in the meantime, triggering a re-election.
     val joinGroupResult = staticJoinGroup(groupId, rebalanceResult.followerId, followerInstanceId, protocolType, newProtocols, clockAdvance = DefaultSessionTimeout + 1)
 
@@ -1033,7 +1033,7 @@ class GroupCoordinatorTest {
     // A static follower rejoin with protocol changed and also cause updated group's selectedProtocol changed
     // should trigger rebalance.
     val selectedProtocols = getGroup(groupId).selectProtocol
-    val newProtocols = List(("roundrobin", metadata))
+    val newProtocols = List(("roundrobin", remoteLogMetadata))
     assert(!newProtocols.map(_._1).contains(selectedProtocols))
     // Old leader hasn't joined in the meantime, triggering a re-election.
     val joinGroupResult = staticJoinGroup(groupId, JoinGroupRequest.UNKNOWN_MEMBER_ID, followerInstanceId, protocolType, newProtocols, clockAdvance = DefaultSessionTimeout + 1)
@@ -1055,7 +1055,7 @@ class GroupCoordinatorTest {
     val rebalanceResult = staticMembersJoinAndRebalance(leaderInstanceId, followerInstanceId)
 
     val selectedProtocol = getGroup(groupId).selectProtocol
-    val newProtocols = List((selectedProtocol, metadata))
+    val newProtocols = List((selectedProtocol, remoteLogMetadata))
     // Timeout old leader in the meantime.
     val joinGroupResult = staticJoinGroupWithPersistence(groupId, JoinGroupRequest.UNKNOWN_MEMBER_ID,
       followerInstanceId, protocolType, newProtocols, clockAdvance = 1, appendRecordError = Errors.MESSAGE_TOO_LARGE)
@@ -1087,7 +1087,7 @@ class GroupCoordinatorTest {
     // A static follower rejoin with protocol changing to leader protocol subset won't trigger rebalance if updated
     // group's selectProtocol remain unchanged.
     val selectedProtocol = getGroup(groupId).selectProtocol
-    val newProtocols = List((selectedProtocol, metadata))
+    val newProtocols = List((selectedProtocol, remoteLogMetadata))
     // Timeout old leader in the meantime.
     val joinGroupResult = staticJoinGroupWithPersistence(groupId, JoinGroupRequest.UNKNOWN_MEMBER_ID,
       followerInstanceId, protocolType, newProtocols, clockAdvance = 1)
@@ -2081,7 +2081,7 @@ class GroupCoordinatorTest {
     assertEquals(Errors.NONE, firstSyncResult.error)
 
     // join groups from the leader should force the group to rebalance, which allows the
-    // leader to push new assignments when local metadata changes
+    // leader to push new assignments when local remoteLogMetadata changes
 
     EasyMock.reset(replicaManager)
     val secondJoinResult = await(sendJoinGroup(groupId, firstMemberId, protocolType, protocols), 1)
@@ -2681,9 +2681,9 @@ class GroupCoordinatorTest {
   def testFetchOffsets(): Unit = {
     val tp = new TopicPartition("topic", 0)
     val offset = 97L
-    val metadata = "some metadata"
+    val remoteLogMetadata = "some remoteLogMetadata"
     val leaderEpoch = Optional.of[Integer](15)
-    val offsetAndMetadata = OffsetAndMetadata(offset, leaderEpoch, metadata, timer.time.milliseconds(), None)
+    val offsetAndMetadata = OffsetAndMetadata(offset, leaderEpoch, remoteLogMetadata, timer.time.milliseconds(), None)
 
     val commitOffsetResult = commitOffsets(groupId, OffsetCommitRequest.DEFAULT_MEMBER_ID,
       OffsetCommitRequest.DEFAULT_GENERATION_ID, Map(tp -> offsetAndMetadata))
@@ -2695,7 +2695,7 @@ class GroupCoordinatorTest {
     val maybePartitionData = partitionData.get(tp)
     assertTrue(maybePartitionData.isDefined)
     assertEquals(offset, maybePartitionData.get.offset)
-    assertEquals(metadata, maybePartitionData.get.metadata)
+    assertEquals(remoteLogMetadata, maybePartitionData.get.remoteLogMetadata)
     assertEquals(leaderEpoch, maybePartitionData.get.leaderEpoch)
   }
 
@@ -2883,7 +2883,7 @@ class GroupCoordinatorTest {
     val producerId = 1000L
     val producerEpoch: Short = 3
 
-    val groupIds = List(groupId, otherGroupId)
+    val keys = List(groupId, otherGroupId)
     val offsetTopicPartitions = List(new TopicPartition(Topic.GROUP_METADATA_TOPIC_NAME, groupCoordinator.partitionFor(groupId)),
       new TopicPartition(Topic.GROUP_METADATA_TOPIC_NAME, groupCoordinator.partitionFor(otherGroupId)))
 
@@ -2903,14 +2903,14 @@ class GroupCoordinatorTest {
 
     // We got a commit for only one __consumer_offsets partition. We should only materialize it's group offsets.
     handleTxnCompletion(producerId, List(offsetTopicPartitions(0)), TransactionResult.COMMIT)
-    groupCoordinator.handleFetchOffsets(groupIds(0), requireStable, Some(partitions)) match {
+    groupCoordinator.handleFetchOffsets(keys(0), requireStable, Some(partitions)) match {
       case (error, partData) =>
         errors.append(error)
         partitionData.append(partData)
       case _ =>
     }
 
-    groupCoordinator.handleFetchOffsets(groupIds(1), requireStable, Some(partitions)) match {
+    groupCoordinator.handleFetchOffsets(keys(1), requireStable, Some(partitions)) match {
       case (error, partData) =>
         errors.append(error)
         partitionData.append(partData)
@@ -2931,14 +2931,14 @@ class GroupCoordinatorTest {
     handleTxnCompletion(producerId, List(offsetTopicPartitions(1)), TransactionResult.COMMIT)
     errors.clear()
     partitionData.clear()
-    groupCoordinator.handleFetchOffsets(groupIds(0), requireStable, Some(partitions)) match {
+    groupCoordinator.handleFetchOffsets(keys(0), requireStable, Some(partitions)) match {
       case (error, partData) =>
         errors.append(error)
         partitionData.append(partData)
       case _ =>
     }
 
-     groupCoordinator.handleFetchOffsets(groupIds(1), requireStable, Some(partitions)) match {
+     groupCoordinator.handleFetchOffsets(keys(1), requireStable, Some(partitions)) match {
       case (error, partData) =>
         errors.append(error)
         partitionData.append(partData)
@@ -3532,7 +3532,7 @@ class GroupCoordinatorTest {
     assertEquals(GroupCoordinator.NoProtocol, summary.protocol)
     assertEquals(CompletingRebalance.toString, summary.state)
     assertTrue(summary.members.map(_.memberId).contains(joinGroupResult.memberId))
-    assertTrue(summary.members.forall(_.metadata.isEmpty))
+    assertTrue(summary.members.forall(_.remoteLogMetadata.isEmpty))
     assertTrue(summary.members.forall(_.assignment.isEmpty))
   }
 

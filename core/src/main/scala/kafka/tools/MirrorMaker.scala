@@ -408,11 +408,11 @@ object MirrorMaker extends Logging with KafkaMetricsGroup {
   private class MirrorMakerProducerCallback (topic: String, key: Array[Byte], value: Array[Byte])
     extends ErrorLoggingCallback(topic, key, value, false) {
 
-    override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+    override def onCompletion(remoteLogMetadata: RecordMetadata, exception: Exception): Unit = {
       if (exception != null) {
         // Use default call back to log error. This means the max retries of producer has reached and message
         // still could not be sent.
-        super.onCompletion(metadata, exception)
+        super.onCompletion(remoteLogMetadata, exception)
         // If abort.on.send.failure is set, stop the mirror maker. Otherwise log skipped message and move on.
         if (abortOnSendFailure) {
           info("Closing producer due to send failure.")

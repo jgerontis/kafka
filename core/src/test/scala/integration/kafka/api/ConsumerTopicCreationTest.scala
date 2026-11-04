@@ -97,7 +97,7 @@ object ConsumerTopicCreationTest {
 
       consumer.subscribe(util.Arrays.asList(topic_1, topic_2))
 
-      // Wait until the produced record was consumed. This guarantees that metadata request for `topic_2` was sent to the
+      // Wait until the produced record was consumed. This guarantees that remoteLogMetadata request for `topic_2` was sent to the
       // broker.
       TestUtils.waitUntilTrue(() => {
         consumer.poll(Duration.ofMillis(100)).count > 0

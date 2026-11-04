@@ -18,7 +18,7 @@
 package kafka.server
 
 import kafka.admin.BrokerMetadata
-import kafka.server.metadata.KRaftMetadataCache
+import kafka.server.remoteLogMetadata.KRaftMetadataCache
 import org.apache.kafka.common.{Cluster, Node, TopicPartition}
 import org.apache.kafka.common.message.{MetadataResponseData, UpdateMetadataRequestData}
 import org.apache.kafka.common.network.ListenerName
@@ -26,7 +26,7 @@ import org.apache.kafka.common.network.ListenerName
 trait MetadataCache {
 
   /**
-   * Return topic metadata for a given set of topics and listener. See KafkaApis#handleTopicMetadataRequest for details
+   * Return topic remoteLogMetadata for a given set of topics and listener. See KafkaApis#handleTopicMetadataRequest for details
    * on the use of the two boolean flags.
    *
    * @param topics                      The set of topics.
@@ -35,7 +35,7 @@ trait MetadataCache {
    *                                    MetadataResponse version 0.
    * @param errorUnavailableListeners   If true, return LEADER_NOT_AVAILABLE if the listener is not found on the leader.
    *                                    This is used for MetadataResponse versions 0-5.
-   * @return                            A collection of topic metadata.
+   * @return                            A collection of topic remoteLogMetadata.
    */
   def getTopicMetadata(
     topics: collection.Set[String],

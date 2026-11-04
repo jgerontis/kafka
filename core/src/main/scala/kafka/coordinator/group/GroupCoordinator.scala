@@ -241,7 +241,7 @@ class GroupCoordinator(val brokerId: Int,
     group.inLock {
       if (group.is(Dead)) {
         // if the group is marked as dead, it means some other thread has just removed the group
-        // from the coordinator metadata; it is likely that the group has migrated to some other
+        // from the coordinator remoteLogMetadata; it is likely that the group has migrated to some other
         // coordinator OR the group is in a transient unstable phase. Let the member retry
         // finding the correct coordinator and rejoin.
         responseCallback(JoinGroupResult(JoinGroupRequest.UNKNOWN_MEMBER_ID, Errors.COORDINATOR_NOT_AVAILABLE))
@@ -385,7 +385,7 @@ class GroupCoordinator(val brokerId: Int,
     group.inLock {
       if (group.is(Dead)) {
         // if the group is marked as dead, it means some other thread has just removed the group
-        // from the coordinator metadata; it is likely that the group has migrated to some other
+        // from the coordinator remoteLogMetadata; it is likely that the group has migrated to some other
         // coordinator OR the group is in a transient unstable phase. Let the member retry
         // finding the correct coordinator and rejoin.
         responseCallback(JoinGroupResult(memberId, Errors.COORDINATOR_NOT_AVAILABLE))
@@ -421,7 +421,7 @@ class GroupCoordinator(val brokerId: Int,
             case CompletingRebalance =>
               val member = group.get(memberId)
               if (member.matches(protocols)) {
-                // member is joining with the same metadata (which could be because it failed to
+                // member is joining with the same remoteLogMetadata (which could be because it failed to
                 // receive the initial JoinGroup response), so just return current group information
                 // for the current generation.
                 responseCallback(JoinGroupResult(
@@ -437,8 +437,8 @@ class GroupCoordinator(val brokerId: Int,
                   leaderId = group.leaderOrNull,
                   error = Errors.NONE))
               } else {
-                // member has changed metadata, so force a rebalance
-                updateMemberAndRebalance(group, member, protocols, s"Updating metadata for member ${member.memberId} during ${group.currentState}", responseCallback)
+                // member has changed remoteLogMetadata, so force a rebalance
+                updateMemberAndRebalance(group, member, protocols, s"Updating remoteLogMetadata for member ${member.memberId} during ${group.currentState}", responseCallback)
               }
 
             case Stable =>
@@ -446,12 +446,12 @@ class GroupCoordinator(val brokerId: Int,
               if (group.isLeader(memberId)) {
                 // force a rebalance if the leader sends JoinGroup;
                 // This allows the leader to trigger rebalances for changes affecting assignment
-                // which do not affect the member metadata (such as topic metadata changes for the consumer)
+                // which do not affect the member remoteLogMetadata (such as topic remoteLogMetadata changes for the consumer)
                 updateMemberAndRebalance(group, member, protocols, s"Leader ${member.memberId} re-joining group during ${group.currentState}", responseCallback)
               } else if (!member.matches(protocols)) {
-                updateMemberAndRebalance(group, member, protocols, s"Updating metadata for member ${member.memberId} during ${group.currentState}", responseCallback)
+                updateMemberAndRebalance(group, member, protocols, s"Updating remoteLogMetadata for member ${member.memberId} during ${group.currentState}", responseCallback)
               } else {
-                // for followers with no actual change to their metadata, just return group information
+                // for followers with no actual change to their remoteLogMetadata, just return group information
                 // for the current generation which will allow them to issue SyncGroup
                 responseCallback(JoinGroupResult(
                   members = List.empty,
@@ -512,7 +512,7 @@ class GroupCoordinator(val brokerId: Int,
   ): Option[Errors] = {
     if (group.is(Dead)) {
       // if the group is marked as dead, it means some other thread has just removed the group
-      // from the coordinator metadata; this is likely that the group has migrated to some other
+      // from the coordinator remoteLogMetadata; this is likely that the group has migrated to some other
       // coordinator OR the group is in a transient unstable phase. Let the member retry
       // finding the correct coordinator and rejoin.
       Some(Errors.COORDINATOR_NOT_AVAILABLE)
@@ -681,12 +681,12 @@ class GroupCoordinator(val brokerId: Int,
     }
   }
 
-  def handleDeleteGroups(groupIds: Set[String],
+  def handleDeleteGroups(keys: Set[String],
                          requestLocal: RequestLocal = RequestLocal.NoCaching): Map[String, Errors] = {
     val groupErrors = mutable.Map.empty[String, Errors]
     val groupsEligibleForDeletion = mutable.ArrayBuffer[GroupMetadata]()
 
-    groupIds.foreach { groupId =>
+    keys.foreach { groupId =>
       validateGroupStatus(groupId, ApiKeys.DELETE_GROUPS) match {
         case Some(error) =>
           groupErrors += groupId -> error
@@ -1099,7 +1099,7 @@ class GroupCoordinator(val brokerId: Int,
 
   private def onGroupUnloaded(group: GroupMetadata): Unit = {
     group.inLock {
-      info(s"Unloading group metadata for ${group.groupId} with generation ${group.generationId}")
+      info(s"Unloading group remoteLogMetadata for ${group.groupId} with generation ${group.generationId}")
       val previousState = group.currentState
       group.transitionTo(Dead)
 
@@ -1125,7 +1125,7 @@ class GroupCoordinator(val brokerId: Int,
 
   private def onGroupLoaded(group: GroupMetadata): Unit = {
     group.inLock {
-      info(s"Loading group metadata for ${group.groupId} with generation ${group.generationId}")
+      info(s"Loading group remoteLogMetadata for ${group.groupId} with generation ${group.generationId}")
       assert(group.is(Stable) || group.is(Empty))
       if (groupIsOverCapacity(group)) {
         prepareRebalance(group, s"Freshly-loaded group is over capacity ($groupConfig.groupMaxSize). Rebalacing in order to give a chance for consumers to commit offsets")
@@ -1280,7 +1280,7 @@ class GroupCoordinator(val brokerId: Int,
           val groupAssignment: Map[String, Array[Byte]] = group.allMemberMetadata.map(member => member.memberId -> member.assignment).toMap
           groupManager.storeGroup(group, groupAssignment, error => {
             if (error != Errors.NONE) {
-              warn(s"Failed to persist metadata for group ${group.groupId}: ${error.message}")
+              warn(s"Failed to persist remoteLogMetadata for group ${group.groupId}: ${error.message}")
 
               // Failed to persist member.id of the given static member, revert the update of the static member in the group.
               group.updateMember(knownStaticMember, oldProtocols, null)
@@ -1320,7 +1320,7 @@ class GroupCoordinator(val brokerId: Int,
         // we should still trigger a new rebalance, since the old member may already be sent to the leader
         // for assignment, and hence when the assignment gets back there would be a mismatch of the old member id
         // with the new replaced member id. As a result the new member id would not get any assignment.
-        prepareRebalance(group, s"Updating metadata for static member ${member.memberId} with instance id $groupInstanceId")
+        prepareRebalance(group, s"Updating remoteLogMetadata for static member ${member.memberId} with instance id $groupInstanceId")
       case Empty | Dead =>
         throw new IllegalStateException(s"Group ${group.groupId} was not supposed to be " +
           s"in the state ${group.currentState} when the unknown static member $groupInstanceId rejoins.")
@@ -1432,10 +1432,10 @@ class GroupCoordinator(val brokerId: Int,
 
           groupManager.storeGroup(group, Map.empty, error => {
             if (error != Errors.NONE) {
-              // we failed to write the empty group metadata. If the broker fails before another rebalance,
+              // we failed to write the empty group remoteLogMetadata. If the broker fails before another rebalance,
               // the previous generation written to the log will become active again (and most likely timeout).
               // This should be safe since there are no active members in an empty generation, so we just warn.
-              warn(s"Failed to write empty metadata for group ${group.groupId}: ${error.message}")
+              warn(s"Failed to write empty remoteLogMetadata for group ${group.groupId}: ${error.message}")
             }
           }, RequestLocal.NoCaching)
         } else {

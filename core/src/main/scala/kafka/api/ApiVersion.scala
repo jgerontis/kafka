@@ -85,7 +85,7 @@ object ApiVersion {
     KAFKA_2_0_IV0,
     // Several request versions were bumped due to KIP-219 (Improve quota communication)
     KAFKA_2_0_IV1,
-    // Introduced new schemas for group offset (v2) and group metadata (v2) (KIP-211)
+    // Introduced new schemas for group offset (v2) and group remoteLogMetadata (v2) (KIP-211)
     KAFKA_2_1_IV0,
     // New Fetch, OffsetsForLeaderEpoch, and ListOffsets schemas (KIP-320)
     KAFKA_2_1_IV1,

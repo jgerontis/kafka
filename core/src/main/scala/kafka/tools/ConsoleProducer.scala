@@ -150,7 +150,7 @@ object ConsoleProducer {
       .withRequiredArg
       .ofType(classOf[java.lang.Integer])
       .defaultsTo(3)
-    val retryBackoffMsOpt = parser.accepts("retry-backoff-ms", "Before each retry, the producer refreshes the metadata of relevant topics. Since leader election takes a bit of time, this property specifies the amount of time that the producer waits before refreshing the metadata.")
+    val retryBackoffMsOpt = parser.accepts("retry-backoff-ms", "Before each retry, the producer refreshes the remoteLogMetadata of relevant topics. Since leader election takes a bit of time, this property specifies the amount of time that the producer waits before refreshing the remoteLogMetadata.")
       .withRequiredArg
       .ofType(classOf[java.lang.Integer])
       .defaultsTo(100)
@@ -170,10 +170,10 @@ object ConsoleProducer {
       .describedAs("request timeout ms")
       .ofType(classOf[java.lang.Integer])
       .defaultsTo(1500)
-    val metadataExpiryMsOpt = parser.accepts("metadata-expiry-ms",
-      "The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any leadership changes.")
+    val metadataExpiryMsOpt = parser.accepts("remoteLogMetadata-expiry-ms",
+      "The period of time in milliseconds after which we force a refresh of remoteLogMetadata even if we haven't seen any leadership changes.")
       .withRequiredArg
-      .describedAs("metadata expiration interval")
+      .describedAs("remoteLogMetadata expiration interval")
       .ofType(classOf[java.lang.Long])
       .defaultsTo(5*60*1000L)
     val maxBlockMsOpt = parser.accepts("max-block-ms",

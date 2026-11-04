@@ -686,7 +686,7 @@ class ClientQuotaManager(private val config: ClientQuotaManagerConfig,
     }
 
     override def updateClusterMetadata(cluster: Cluster): Boolean = {
-      // Default quota callback does not use any cluster metadata
+      // Default quota callback does not use any cluster remoteLogMetadata
       false
     }
 

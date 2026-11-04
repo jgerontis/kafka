@@ -65,9 +65,9 @@ class SecurityTest(EndToEndTest):
         Test that invalid hostname in certificate results in connection failures.
         When security_protocol=SSL, client SSL handshakes are expected to fail due to hostname verification failure.
         When security_protocol=PLAINTEXT and interbroker_security_protocol=SSL, controller connections fail
-        with hostname verification failure. Since metadata cannot be propagated in the cluster without a valid certificate,
-        the broker's metadata caches will be empty. Hence we expect Metadata requests to fail with an INVALID_REPLICATION_FACTOR
-        error since the broker will attempt to create the topic automatically as it does not exist in the metadata cache,
+        with hostname verification failure. Since remoteLogMetadata cannot be propagated in the cluster without a valid certificate,
+        the broker's remoteLogMetadata caches will be empty. Hence we expect Metadata requests to fail with an INVALID_REPLICATION_FACTOR
+        error since the broker will attempt to create the topic automatically as it does not exist in the remoteLogMetadata cache,
         and there will be no online brokers.
         """
 
