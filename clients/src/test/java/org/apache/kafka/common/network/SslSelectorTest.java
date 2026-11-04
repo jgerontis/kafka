@@ -346,6 +346,34 @@ public abstract class SslSelectorTest extends SelectorTest {
         return new SslSender(tlsProtocol, serverAddress, payload);
     }
 
+    /**
+     * Renegotiation is not supported when TLS 1.2 is used (renegotiation was removed from TLS 1.3)
+     */
+    @Test
+    public void testRenegotiationFails() throws Exception {
+        String node = "0";
+        // create connections
+        InetSocketAddress addr = new InetSocketAddress("localhost", server.port);
+        selector.connect(node, addr, BUFFER_SIZE, BUFFER_SIZE);
+
+        // send echo requests and receive responses
+        while (!selector.isChannelReady(node)) {
+            selector.poll(1000L);
+        }
+        selector.send(createSend(node, node + "-" + 0));
+        selector.poll(0L);
+        server.renegotiate();
+        selector.send(createSend(node, node + "-" + 1));
+        long expiryTime = System.currentTimeMillis() + 2000;
+
+        List<String> disconnected = new ArrayList<>();
+        while (!disconnected.contains(node) && System.currentTimeMillis() < expiryTime) {
+            selector.poll(10);
+            disconnected.addAll(selector.disconnected().keySet());
+        }
+        assertTrue(disconnected.contains(node), "Renegotiation should cause disconnection");
+    }
+
     private static class TestSslChannelBuilder extends SslChannelBuilder {
 
         public TestSslChannelBuilder(Mode mode) {

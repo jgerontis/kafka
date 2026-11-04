@@ -708,6 +708,10 @@ public class StreamsBuilderTest {
 
     @Test
     public void shouldNotAddThirdStateStoreIfStreamStreamJoinFixIsDisabledViaOldApi() {
+        shouldNotAddThirdStateStoreIfStreamStreamJoinFixIsDisabled();
+    }
+
+    private void shouldNotAddThirdStateStoreIfStreamStreamJoinFixIsDisabled() {
         final KStream<String, String> streamOne = builder.stream(STREAM_TOPIC);
         final KStream<String, String> streamTwo = builder.stream(STREAM_TOPIC_TWO);
 

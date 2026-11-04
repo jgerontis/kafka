@@ -70,7 +70,7 @@ public class AlterConsumerGroupOffsetsHandlerTest {
     }
 
     @Test
-    public void testHandleSuccessfulResponse() {
+    public void testSuccessfulHandleResponse() {
         AlterConsumerGroupOffsetsHandler handler = new AlterConsumerGroupOffsetsHandler(groupId, partitions, logContext);
         Map<TopicPartition, Errors> responseData = Collections.singletonMap(t0p0, Errors.NONE);
         OffsetCommitResponse response = new OffsetCommitResponse(0, responseData);
