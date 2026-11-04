@@ -613,7 +613,7 @@ public final class MessageTest {
     }
 
     @Test
-    public void testOffsetFetchV0ToV7() throws Exception {
+    public void testOffsetFetchVersions() throws Exception {
         String groupId = "groupId";
         String topicName = "topic";
 

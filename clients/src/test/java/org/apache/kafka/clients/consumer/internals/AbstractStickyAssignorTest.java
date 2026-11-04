@@ -267,7 +267,7 @@ public abstract class AbstractStickyAssignorTest {
      * This unit test is testing all consumers owned less than minQuota partitions situation
      */
     @Test
-    public void testAllConsumersAreUnderMinQuota() {
+    public void testAllConsumerAreUnderMinQuota() {
         Map<String, Integer> partitionsPerTopic = new HashMap<>();
         partitionsPerTopic.put(topic1, 2);
         partitionsPerTopic.put(topic2, 3);

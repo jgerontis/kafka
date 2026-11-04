@@ -689,7 +689,7 @@ public final class QuorumController implements Controller {
                         processedRecordsSize += batch.sizeInBytes();
                     }
 
-                    maybeGenerateSnapshot(processedRecordsSize);
+                    checkSnapshotGeneration(processedRecordsSize);
                 } finally {
                     reader.close();
                 }
@@ -925,7 +925,7 @@ public final class QuorumController implements Controller {
         }
     }
 
-    private void maybeGenerateSnapshot(long batchSizeInBytes) {
+    private void checkSnapshotGeneration(long batchSizeInBytes) {
         newBytesSinceLastSnapshot += batchSizeInBytes;
         if (newBytesSinceLastSnapshot >= snapshotMaxNewRecordBytes &&
             snapshotGeneratorManager.generator == null

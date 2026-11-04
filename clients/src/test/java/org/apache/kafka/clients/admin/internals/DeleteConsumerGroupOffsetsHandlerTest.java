@@ -121,7 +121,7 @@ public class DeleteConsumerGroupOffsetsHandlerTest {
         return response;
     }
 
-    private OffsetDeleteResponse buildPartitionErrorResponse(Errors error) {
+    private OffsetDeleteResponse buildResponse(Errors error) {
         OffsetDeleteResponse response = new OffsetDeleteResponse(
             new OffsetDeleteResponseData()
                 .setThrottleTimeMs(0)
@@ -150,7 +150,7 @@ public class DeleteConsumerGroupOffsetsHandlerTest {
         Errors error
     ) {
         DeleteConsumerGroupOffsetsHandler handler = new DeleteConsumerGroupOffsetsHandler(groupId, tps, logContext);
-        OffsetDeleteResponse response = buildPartitionErrorResponse(error);
+        OffsetDeleteResponse response = buildResponse(error);
         return handler.handleResponse(new Node(1, "host", 1234), singleton(CoordinatorKey.byGroupId(groupId)), response);
     }
 
