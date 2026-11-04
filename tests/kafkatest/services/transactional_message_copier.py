@@ -131,7 +131,7 @@ class TransactionalMessageCopier(KafkaPathResolverMixin, BackgroundThreadService
             cmd += " --enable-random-aborts"
 
         if self.use_group_metadata:
-            cmd += " --use-group-metadata"
+            cmd += " --use-group-remoteLogMetadata"
 
         if self.group_mode:
             cmd += " --group-mode"

@@ -82,7 +82,7 @@ class AddPartitionsTest extends BaseRequestTest {
     assertEquals(leader1, leader1FromZk)
     assertEquals(leader2, leader2FromZk)
 
-    // read metadata from a broker and verify the new topic partitions exist
+    // read remoteLogMetadata from a broker and verify the new topic partitions exist
     TestUtils.waitForPartitionMetadata(servers, topic1, 1)
     TestUtils.waitForPartitionMetadata(servers, topic1, 2)
     val response = connectAndReceive[MetadataResponse](
@@ -115,7 +115,7 @@ class AddPartitionsTest extends BaseRequestTest {
     assertEquals(leader1, leader1FromZk)
     assertEquals(leader2, leader2FromZk)
 
-    // read metadata from a broker and verify the new topic partitions exist
+    // read remoteLogMetadata from a broker and verify the new topic partitions exist
     TestUtils.waitForPartitionMetadata(servers, topic2, 1)
     TestUtils.waitForPartitionMetadata(servers, topic2, 2)
     val response = connectAndReceive[MetadataResponse](
@@ -136,7 +136,7 @@ class AddPartitionsTest extends BaseRequestTest {
   def testReplicaPlacementAllServers(): Unit = {
     adminZkClient.addPartitions(topic3, topic3Assignment, adminZkClient.getBrokerMetadatas(), 7)
 
-    // read metadata from a broker and verify the new topic partitions exist
+    // read remoteLogMetadata from a broker and verify the new topic partitions exist
     TestUtils.waitForPartitionMetadata(servers, topic3, 1)
     TestUtils.waitForPartitionMetadata(servers, topic3, 2)
     TestUtils.waitForPartitionMetadata(servers, topic3, 3)
@@ -161,7 +161,7 @@ class AddPartitionsTest extends BaseRequestTest {
   def testReplicaPlacementPartialServers(): Unit = {
     adminZkClient.addPartitions(topic2, topic2Assignment, adminZkClient.getBrokerMetadatas(), 3)
 
-    // read metadata from a broker and verify the new topic partitions exist
+    // read remoteLogMetadata from a broker and verify the new topic partitions exist
     TestUtils.waitForPartitionMetadata(servers, topic2, 1)
     TestUtils.waitForPartitionMetadata(servers, topic2, 2)
 
@@ -174,9 +174,9 @@ class AddPartitionsTest extends BaseRequestTest {
     validateLeaderAndReplicas(topicMetadata, 2, 3, Set(1, 3))
   }
 
-  def validateLeaderAndReplicas(metadata: TopicMetadata, partitionId: Int, expectedLeaderId: Int,
+  def validateLeaderAndReplicas(remoteLogMetadata: TopicMetadata, partitionId: Int, expectedLeaderId: Int,
                                 expectedReplicas: Set[Int]): Unit = {
-    val partitionOpt = metadata.partitionMetadata.asScala.find(_.partition == partitionId)
+    val partitionOpt = remoteLogMetadata.partitionMetadata.asScala.find(_.partition == partitionId)
     assertTrue(partitionOpt.isDefined, s"Partition $partitionId should exist")
     val partition = partitionOpt.get
 

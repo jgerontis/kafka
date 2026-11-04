@@ -39,7 +39,7 @@ import org.apache.kafka.common.requests.LeaderAndIsrRequest
 import org.apache.kafka.common.security.auth.SecurityProtocol
 import org.apache.kafka.common.serialization.{IntegerDeserializer, IntegerSerializer, StringDeserializer, StringSerializer}
 import org.apache.kafka.common.utils.Time
-import org.apache.kafka.metadata.BrokerState
+import org.apache.kafka.remoteLogMetadata.BrokerState
 import org.junit.jupiter.api.{BeforeEach, Disabled, Test, Timeout}
 import org.junit.jupiter.api.Assertions._
 
@@ -102,7 +102,7 @@ class ServerShutdownTest extends ZooKeeperTestHarness {
     server = new KafkaServer(config)
     server.startup()
 
-    // wait for the broker to receive the update metadata request after startup
+    // wait for the broker to receive the update remoteLogMetadata request after startup
     TestUtils.waitForPartitionMetadata(Seq(server), topic, 0)
 
     producer = createProducer(server)

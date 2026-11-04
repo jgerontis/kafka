@@ -27,7 +27,7 @@ import kafka.utils.{KafkaScheduler, MockTime, TestUtils}
 import java.util.concurrent.atomic.AtomicBoolean
 
 import kafka.cluster.Partition
-import kafka.server.metadata.MockConfigRepository
+import kafka.server.remoteLogMetadata.MockConfigRepository
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.record.SimpleRecord
 

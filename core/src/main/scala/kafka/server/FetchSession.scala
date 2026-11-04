@@ -230,7 +230,7 @@ class FetchSession(val id: Int,
     EvictableKey(privileged, cachedSize, id)
   }
 
-  def metadata: JFetchMetadata = synchronized { new JFetchMetadata(id, epoch) }
+  def remoteLogMetadata: JFetchMetadata = synchronized { new JFetchMetadata(id, epoch) }
 
   def getFetchOffset(topicPartition: TopicPartition): Option[Long] = synchronized {
     Option(partitionMap.find(new CachedPartition(topicPartition))).map(_.fetchOffset)
@@ -364,7 +364,7 @@ class SessionlessFetchContext(val fetchData: util.Map[TopicPartition, FetchReque
   *
   * @param time               The clock to use.
   * @param cache              The fetch session cache.
-  * @param reqMetadata        The request metadata.
+  * @param reqMetadata        The request remoteLogMetadata.
   * @param fetchData          The partition data from the fetch request.
   * @param isFromFollower     True if this fetch request came from a follower.
   */
@@ -407,7 +407,7 @@ class FullFetchContext(private val time: Time,
   * The fetch context for an incremental fetch request.
   *
   * @param time         The clock to use.
-  * @param reqMetadata  The request metadata.
+  * @param reqMetadata  The request remoteLogMetadata.
   * @param session      The incremental fetch request session.
   */
 class IncrementalFetchContext(private val time: Time,

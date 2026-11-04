@@ -18,7 +18,7 @@ package kafka.server
 
 import java.util.Properties
 
-import kafka.server.metadata.ZkConfigRepository
+import kafka.server.remoteLogMetadata.ZkConfigRepository
 import kafka.zk.KafkaZkClient
 import org.apache.kafka.common.config.ConfigResource
 import org.apache.kafka.common.config.ConfigResource.Type

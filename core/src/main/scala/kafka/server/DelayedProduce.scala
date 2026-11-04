@@ -38,7 +38,7 @@ case class ProducePartitionStatus(requiredOffset: Long, responseStatus: Partitio
 }
 
 /**
- * The produce metadata maintained by the delayed produce operation
+ * The produce remoteLogMetadata maintained by the delayed produce operation
  */
 case class ProduceMetadata(produceRequiredAcks: Short,
                            produceStatus: Map[TopicPartition, ProducePartitionStatus]) {

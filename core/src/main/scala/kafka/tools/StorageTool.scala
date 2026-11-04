@@ -168,7 +168,7 @@ object StorageTool extends Logging {
       }
 
       prevMetadata.foreach { prev =>
-        stream.println(s"Found metadata: ${prev}")
+        stream.println(s"Found remoteLogMetadata: ${prev}")
         stream.println("")
       }
 

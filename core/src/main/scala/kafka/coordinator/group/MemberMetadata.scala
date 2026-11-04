@@ -25,7 +25,7 @@ case class MemberSummary(memberId: String,
                          groupInstanceId: Option[String],
                          clientId: String,
                          clientHost: String,
-                         metadata: Array[Byte],
+                         remoteLogMetadata: Array[Byte],
                          assignment: Array[Byte])
 
 private[group] object MemberMetadata {
@@ -33,23 +33,23 @@ private[group] object MemberMetadata {
 }
 
 /**
- * Member metadata contains the following metadata:
+ * Member remoteLogMetadata contains the following remoteLogMetadata:
  *
- * Heartbeat metadata:
+ * Heartbeat remoteLogMetadata:
  * 1. negotiated heartbeat session timeout
  * 2. timestamp of the latest heartbeat
  *
- * Protocol metadata:
+ * Protocol remoteLogMetadata:
  * 1. the list of supported protocols (ordered by preference)
- * 2. the metadata associated with each protocol
+ * 2. the remoteLogMetadata associated with each protocol
  *
  * In addition, it also contains the following state information:
  *
  * 1. Awaiting rebalance callback: when the group is in the prepare-rebalance state,
- *                                 its rebalance callback will be kept in the metadata if the
+ *                                 its rebalance callback will be kept in the remoteLogMetadata if the
  *                                 member has sent the join group request
  * 2. Awaiting sync callback: when the group is in the awaiting-sync state, its sync callback
- *                            is kept in metadata until the leader provides the group assignment
+ *                            is kept in remoteLogMetadata until the leader provides the group assignment
  *                            and the group transitions to stable
  */
 @nonthreadsafe
@@ -80,11 +80,11 @@ private[group] class MemberMetadata(var memberId: String,
   def isAwaitingSync: Boolean = awaitingSyncCallback != null
 
   /**
-   * Get metadata corresponding to the provided protocol.
+   * Get remoteLogMetadata corresponding to the provided protocol.
    */
-  def metadata(protocol: String): Array[Byte] = {
+  def remoteLogMetadata(protocol: String): Array[Byte] = {
     supportedProtocols.find(_._1 == protocol) match {
-      case Some((_, metadata)) => metadata
+      case Some((_, remoteLogMetadata)) => remoteLogMetadata
       case None =>
         throw new IllegalArgumentException("Member does not support protocol")
     }
@@ -104,7 +104,7 @@ private[group] class MemberMetadata(var memberId: String,
   }
 
   /**
-   * Check if the provided protocol metadata matches the currently stored metadata.
+   * Check if the provided protocol remoteLogMetadata matches the currently stored remoteLogMetadata.
    */
   def matches(protocols: List[(String, Array[Byte])]): Boolean = {
     if (protocols.size != this.supportedProtocols.size)
@@ -120,7 +120,7 @@ private[group] class MemberMetadata(var memberId: String,
   }
 
   def summary(protocol: String): MemberSummary = {
-    MemberSummary(memberId, groupInstanceId, clientId, clientHost, metadata(protocol), assignment)
+    MemberSummary(memberId, groupInstanceId, clientId, clientHost, remoteLogMetadata(protocol), assignment)
   }
 
   def summaryNoMetadata(): MemberSummary = {

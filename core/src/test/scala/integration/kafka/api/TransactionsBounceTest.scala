@@ -59,8 +59,8 @@ class TransactionsBounceTest extends IntegrationTestHarness {
   // This is the one of the few tests we currently allow to preallocate ports, despite the fact that this can result in transient
   // failures due to ports getting reused. We can't use random ports because of bad behavior that can result from bouncing
   // brokers too quickly when they get new, random ports. If we're not careful, the client can end up in a situation
-  // where metadata is not refreshed quickly enough, and by the time it's actually trying to, all the servers have
-  // been bounced and have new addresses. None of the bootstrap nodes or current metadata can get them connected to a
+  // where remoteLogMetadata is not refreshed quickly enough, and by the time it's actually trying to, all the servers have
+  // been bounced and have new addresses. None of the bootstrap nodes or current remoteLogMetadata can get them connected to a
   // running server.
   //
   // Since such quick rotation of servers is incredibly unrealistic, we allow this one test to preallocate ports, leaving

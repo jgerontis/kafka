@@ -24,7 +24,7 @@ class KafkaConfig(dict):
     DEFAULTS = {
         config_property.SOCKET_RECEIVE_BUFFER_BYTES: 65536,
         config_property.LOG_DIRS: "/mnt/kafka/kafka-data-logs-1,/mnt/kafka/kafka-data-logs-2",
-        config_property.METADATA_LOG_DIR: "/mnt/kafka/kafka-metadata-logs",
+        config_property.METADATA_LOG_DIR: "/mnt/kafka/kafka-remoteLogMetadata-logs",
         config_property.METADATA_LOG_SEGMENT_BYTES: str(9*1024*1024), # 9 MB
         config_property.METADATA_LOG_BYTES_BETWEEN_SNAPSHOTS: str(10*1024*1024), # 10 MB
         config_property.METADATA_LOG_RETENTION_BYTES: str(10*1024*1024), # 10 MB

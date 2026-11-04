@@ -410,18 +410,6 @@ public class MemoryRecordsBuilder implements AutoCloseable {
         return writtenCompressed;
     }
 
-    // Validates and throws an exception if the headers contain non-internal record headers
-    private void validateHeaders(Header[] headers) {
-        if (magic < RecordBatch.MAGIC_VALUE_V2 && headers != null && headers.length > 0) {
-            for (Header header : headers) {
-                if (!header.key().startsWith(INTERNAL_HEADER_PREFIX)) {
-                    throw new IllegalArgumentException("Magic v" + magic + " does not support record headers. [Key = "
-                        + header.key() + "]");
-                }
-            }
-        }
-    }
-
     /**
      * Append a new record at the given offset.
      */
@@ -438,7 +426,14 @@ public class MemoryRecordsBuilder implements AutoCloseable {
             if (timestamp < 0 && timestamp != RecordBatch.NO_TIMESTAMP)
                 throw new IllegalArgumentException("Invalid negative timestamp " + timestamp);
 
-            validateHeaders(headers);
+            if (magic < RecordBatch.MAGIC_VALUE_V2 && headers != null && headers.length > 0) {
+                for (Header header : headers) {
+                    if (!header.key().startsWith(INTERNAL_HEADER_PREFIX)) {
+                        throw new IllegalArgumentException("Magic v" + magic + " does not support record headers. [Key = "
+                            + header.key() + "]");
+                    }
+                }
+            }
 
             if (firstTimestamp == null)
                 firstTimestamp = timestamp;

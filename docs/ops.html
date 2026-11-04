@@ -223,7 +223,7 @@
 
   <p>
 
-  If you are using the old high-level consumer and storing the group metadata in ZooKeeper (i.e. <code>offsets.storage=zookeeper</code>), pass
+  If you are using the old high-level consumer and storing the group remoteLogMetadata in ZooKeeper (i.e. <code>offsets.storage=zookeeper</code>), pass
   <code>--zookeeper</code> instead of <code>--bootstrap-server</code>:
 
   <pre class="line-numbers"><code class="language-bash">  &gt; bin/kafka-consumer-groups.sh --zookeeper localhost:2181 --list</code></pre>
@@ -1144,7 +1144,7 @@ checkpoint-latency-ms-avg
   </ul>
 
   <p>
-    Certain information should normally not be put in a topic name, such as information that is likely to change over time (e.g., the name of the intended consumer) or that is a technical detail or metadata that is available elsewhere (e.g., the topic's partition count and other configuration settings).
+    Certain information should normally not be put in a topic name, such as information that is likely to change over time (e.g., the name of the intended consumer) or that is a technical detail or remoteLogMetadata that is available elsewhere (e.g., the topic's partition count and other configuration settings).
   </p>
 
   <p>
@@ -1378,7 +1378,7 @@ $ bin/kafka-acls.sh \
   <ul>
     <li>data=writeback: Ext4 defaults to data=ordered which puts a strong order on some writes. Kafka does not require this ordering as it does very paranoid data recovery on all unflushed log. This setting removes the ordering constraint and seems to significantly reduce latency.
     <li>Disabling journaling: Journaling is a tradeoff: it makes reboots faster after server crashes but it introduces a great deal of additional locking which adds variance to write performance. Those who don't care about reboot time and want to reduce a major source of write latency spikes can turn off journaling entirely.
-    <li>commit=num_secs: This tunes the frequency with which ext4 commits to its metadata journal. Setting this to a lower value reduces the loss of unflushed data during a crash. Setting this to a higher value will improve throughput.
+    <li>commit=num_secs: This tunes the frequency with which ext4 commits to its remoteLogMetadata journal. Setting this to a lower value reduces the loss of unflushed data during a crash. Setting this to a higher value will improve throughput.
     <li>nobh: This setting controls additional ordering guarantees when using data=writeback mode. This should be safe with Kafka as we do not depend on write ordering and improves throughput and latency.
     <li>delalloc: Delayed allocation means that the filesystem avoid allocating any blocks until the physical write occurs. This allows ext4 to allocate a large extent instead of smaller pages and helps ensure the data is written sequentially. This feature is great for throughput. It does seem to involve some locking in the filesystem which adds a bit of latency variance.
   </ul>
@@ -1708,24 +1708,24 @@ $ bin/kafka-acls.sh \
             Disconnected|SyncConnected|AuthFailed|ConnectedReadOnly|SaslAuthenticated|Expired.</td>
       </tr>
       <tr>
-        <td>Max time to load group metadata</td>
+        <td>Max time to load group remoteLogMetadata</td>
         <td>kafka.server:type=group-coordinator-metrics,name=partition-load-time-max</td>
-        <td>maximum time, in milliseconds, it took to load offsets and group metadata from the consumer offset partitions loaded in the last 30 seconds (including time spent waiting for the loading task to be scheduled)</td>
+        <td>maximum time, in milliseconds, it took to load offsets and group remoteLogMetadata from the consumer offset partitions loaded in the last 30 seconds (including time spent waiting for the loading task to be scheduled)</td>
       </tr>
       <tr>
-        <td>Avg time to load group metadata</td>
+        <td>Avg time to load group remoteLogMetadata</td>
         <td>kafka.server:type=group-coordinator-metrics,name=partition-load-time-avg</td>
-        <td>average time, in milliseconds, it took to load offsets and group metadata from the consumer offset partitions loaded in the last 30 seconds (including time spent waiting for the loading task to be scheduled)</td>
+        <td>average time, in milliseconds, it took to load offsets and group remoteLogMetadata from the consumer offset partitions loaded in the last 30 seconds (including time spent waiting for the loading task to be scheduled)</td>
       </tr>
       <tr>
-        <td>Max time to load transaction metadata</td>
+        <td>Max time to load transaction remoteLogMetadata</td>
         <td>kafka.server:type=transaction-coordinator-metrics,name=partition-load-time-max</td>
-        <td>maximum time, in milliseconds, it took to load transaction metadata from the consumer offset partitions loaded in the last 30 seconds (including time spent waiting for the loading task to be scheduled)</td>
+        <td>maximum time, in milliseconds, it took to load transaction remoteLogMetadata from the consumer offset partitions loaded in the last 30 seconds (including time spent waiting for the loading task to be scheduled)</td>
       </tr>
       <tr>
-        <td>Avg time to load transaction metadata</td>
+        <td>Avg time to load transaction remoteLogMetadata</td>
         <td>kafka.server:type=transaction-coordinator-metrics,name=partition-load-time-avg</td>
-        <td>average time, in milliseconds, it took to load transaction metadata from the consumer offset partitions loaded in the last 30 seconds (including time spent waiting for the loading task to be scheduled)</td>
+        <td>average time, in milliseconds, it took to load transaction remoteLogMetadata from the consumer offset partitions loaded in the last 30 seconds (including time spent waiting for the loading task to be scheduled)</td>
       </tr>
       <tr>
         <td>Consumer Group Offset Count</td>

@@ -488,19 +488,14 @@ public class KafkaAdminClient extends AdminClient {
     }
 
     static KafkaAdminClient createInternal(AdminClientConfig config, TimeoutProcessorFactory timeoutProcessorFactory) {
-        return createInternal(config, timeoutProcessorFactory, null);
-    }
-
-    static KafkaAdminClient createInternal(AdminClientConfig config, TimeoutProcessorFactory timeoutProcessorFactory,
-                                           HostResolver hostResolver) {
-        Metrics metrics = null;
+        Metrics metrics1 = null;
         NetworkClient networkClient = null;
-        Time time = Time.SYSTEM;
-        String clientId = generateClientId(config);
+        Time time1 = Time.SYSTEM;
+        String clientId1 = generateClientId(config);
         ChannelBuilder channelBuilder = null;
         Selector selector = null;
         ApiVersions apiVersions = new ApiVersions();
-        LogContext logContext = createLogContext(clientId);
+        LogContext logContext1 = createLogContext(clientId1);
         LeastLoadedNodeAlgorithm leastLoadedNodeAlgorithm = LeastLoadedNodeAlgorithm.valueOf(
             config.getString(AdminClientConfig.LEAST_LOADED_NODE_ALGORITHM_CONFIG)
         );
@@ -508,17 +503,17 @@ public class KafkaAdminClient extends AdminClient {
         try {
             // Since we only request node information, it's safe to pass true for allowAutoTopicCreation (and it
             // simplifies communication with older brokers)
-            AdminMetadataManager metadataManager = new AdminMetadataManager(logContext,
+            AdminMetadataManager metadataManager1 = new AdminMetadataManager(logContext1,
                 config.getLong(AdminClientConfig.RETRY_BACKOFF_MS_CONFIG),
                 config.getLong(AdminClientConfig.METADATA_MAX_AGE_CONFIG));
             List<InetSocketAddress> addresses = ClientUtils.parseAndValidateAddresses(
                     config.getList(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG),
                     config.getString(AdminClientConfig.CLIENT_DNS_LOOKUP_CONFIG));
-            metadataManager.update(Cluster.bootstrap(addresses), time.milliseconds());
+            metadataManager1.update(Cluster.bootstrap(addresses), time1.milliseconds());
             List<MetricsReporter> reporters = config.getConfiguredInstances(AdminClientConfig.METRIC_REPORTER_CLASSES_CONFIG,
                 MetricsReporter.class,
-                Collections.singletonMap(AdminClientConfig.CLIENT_ID_CONFIG, clientId));
-            Map<String, String> metricTags = Collections.singletonMap("client-id", clientId);
+                Collections.singletonMap(AdminClientConfig.CLIENT_ID_CONFIG, clientId1));
+            Map<String, String> metricTags = Collections.singletonMap("client-id", clientId1);
             MetricConfig metricConfig = new MetricConfig().samples(config.getInt(AdminClientConfig.METRICS_NUM_SAMPLES_CONFIG))
                 .timeWindow(config.getLong(AdminClientConfig.METRICS_SAMPLE_WINDOW_MS_CONFIG), TimeUnit.MILLISECONDS)
                 .recordLevel(Sensor.RecordingLevel.forName(config.getString(AdminClientConfig.METRICS_RECORDING_LEVEL_CONFIG)))
@@ -528,17 +523,17 @@ public class KafkaAdminClient extends AdminClient {
             reporters.add(jmxReporter);
             MetricsContext metricsContext = new KafkaMetricsContext(JMX_PREFIX,
                     config.originalsWithPrefix(CommonClientConfigs.METRICS_CONTEXT_PREFIX));
-            metrics = new Metrics(metricConfig, reporters, time, metricsContext);
-            metrics.setReplaceOnDuplicateMetric(config.getBoolean(AdminClientConfig.METRICS_REPLACE_ON_DUPLICATE_CONFIG));
+            metrics1 = new Metrics(metricConfig, reporters, time1, metricsContext);
+            metrics1.setReplaceOnDuplicateMetric(config.getBoolean(AdminClientConfig.METRICS_REPLACE_ON_DUPLICATE_CONFIG));
             String metricGrpPrefix = "admin-client";
-            channelBuilder = ClientUtils.createChannelBuilder(config, time, logContext);
+            channelBuilder = ClientUtils.createChannelBuilder(config, time1, logContext1);
             selector = new Selector(config.getLong(AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG),
-                    metrics, time, metricGrpPrefix, channelBuilder, logContext);
+                    metrics1, time1, metricGrpPrefix, channelBuilder, logContext1);
             networkClient = new NetworkClient(
-                metadataManager.updater(),
+                metadataManager1.updater(),
                 null,
                 selector,
-                clientId,
+                    clientId1,
                 1,
                 config.getLong(AdminClientConfig.RECONNECT_BACKOFF_MS_CONFIG),
                 config.getLong(AdminClientConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG),
@@ -547,19 +542,19 @@ public class KafkaAdminClient extends AdminClient {
                 (int) TimeUnit.HOURS.toMillis(1),
                 config.getLong(AdminClientConfig.SOCKET_CONNECTION_SETUP_TIMEOUT_MS_CONFIG),
                 config.getLong(AdminClientConfig.SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_CONFIG),
-                time,
+                    time1,
                 true,
                 apiVersions,
                 null,
-                logContext,
-                (hostResolver == null) ? new DefaultHostResolver() : hostResolver,
+                    logContext1,
+                (null == null) ? new DefaultHostResolver() : null,
                 null,
                 leastLoadedNodeAlgorithm,
                 Collections.emptyList());
-            return new KafkaAdminClient(config, clientId, time, metadataManager, metrics, networkClient,
-                timeoutProcessorFactory, logContext);
+            return new KafkaAdminClient(config, clientId1, time1, metadataManager1, metrics1, networkClient,
+                    (org.apache.kafka.clients.admin.KafkaAdminClient.TimeoutProcessorFactory) timeoutProcessorFactory, logContext1);
         } catch (Throwable exc) {
-            closeQuietly(metrics, "Metrics");
+            closeQuietly(metrics1, "Metrics");
             closeQuietly(networkClient, "NetworkClient");
             closeQuietly(selector, "Selector");
             closeQuietly(channelBuilder, "ChannelBuilder");

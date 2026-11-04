@@ -479,7 +479,7 @@ For a detailed description of spotbugs bug categories, see https://spotbugs.read
 
     <Match>
         <!-- Suppress warnings related to jmh generated code -->
-        <Package name="org.apache.kafka.jmh.metadata.generated"/>
+        <Package name="org.apache.kafka.jmh.remoteLogMetadata.generated"/>
     </Match>
     <Match>
         <!-- Suppress a warning about array field volatility as it exists in the original code -->

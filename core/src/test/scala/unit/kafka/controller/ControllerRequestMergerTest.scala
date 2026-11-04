@@ -385,13 +385,13 @@ class ControllerRequestMergerTest {
       stopReplicaCallbackInvocationCount += 1
     }
 
-    // response that contains metadata only
+    // response that contains remoteLogMetadata only
     val responseUpdateMetadataData = new LiCombinedControlResponseData().setUpdateMetadataErrorCode(Errors.NONE.code())
     val responseUpdateMetadata = new LiCombinedControlResponse(responseUpdateMetadataData, ApiKeys.LI_COMBINED_CONTROL.latestVersion())
 
     controllerRequestMerger.triggerCallback(responseUpdateMetadata)
 
-    // metadata only response would not trigger any callback
+    // remoteLogMetadata only response would not trigger any callback
     assertEquals(0, leaderAndISRCallbackInvocationCount, "Mismatched callback count")
     assertEquals(0, stopReplicaCallbackInvocationCount, "Mismatched callback count")
 

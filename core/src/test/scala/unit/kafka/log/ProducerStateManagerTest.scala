@@ -387,7 +387,7 @@ class ProducerStateManagerTest {
 
     lastEntry = appendInfo.toEntry
     assertEquals(producerEpoch, lastEntry.producerEpoch)
-    // verify that appending the transaction marker doesn't affect the metadata of the cached record batches.
+    // verify that appending the transaction marker doesn't affect the remoteLogMetadata of the cached record batches.
     assertEquals(1, lastEntry.firstSeq)
     assertEquals(10, lastEntry.lastSeq)
     assertEquals(16L, lastEntry.firstDataOffset)
@@ -470,7 +470,7 @@ class ProducerStateManagerTest {
     val recoveredMapping = new ProducerStateManager(partition, logDir, maxPidExpirationMs, time)
     recoveredMapping.truncateAndReload(0L, 3L, time.milliseconds)
 
-    // The snapshot only persists the last appended batch metadata
+    // The snapshot only persists the last appended batch remoteLogMetadata
     val loadedEntry = recoveredMapping.lastEntry(producerId)
     assertEquals(1, loadedEntry.get.firstDataOffset)
     assertEquals(1, loadedEntry.get.firstSeq)
@@ -493,7 +493,7 @@ class ProducerStateManagerTest {
     val recoveredMapping = new ProducerStateManager(partition, logDir, maxPidExpirationMs, time)
     recoveredMapping.truncateAndReload(0L, 3L, time.milliseconds)
 
-    // The snapshot only persists the last appended batch metadata
+    // The snapshot only persists the last appended batch remoteLogMetadata
     val loadedEntry = recoveredMapping.lastEntry(producerId)
     assertEquals(1, loadedEntry.get.firstDataOffset)
     assertEquals(1, loadedEntry.get.firstSeq)

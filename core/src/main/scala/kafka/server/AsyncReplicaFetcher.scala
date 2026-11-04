@@ -291,7 +291,7 @@ class AsyncReplicaFetcher(name: String,
         .forReplica(fetchRequestVersion, replicaId, maxWait, minBytes, fetchData.toSend)
         .setMaxBytes(maxBytes)
         .toForget(fetchData.toForget)
-        .metadata(fetchData.metadata)
+        .remoteLogMetadata(fetchData.remoteLogMetadata)
       Some(ReplicaFetch(fetchData.sessionPartitions(), requestBuilder))
     }
 
@@ -389,9 +389,9 @@ class AsyncReplicaFetcher(name: String,
             rlsMetadata = rlm.fetchRemoteLogSegmentMetadata(partition, epoch.get, leaderLocalLogStartOffset)
           } else {
             // If epoch is not available, then it might be possible that this broker might lost its entire local storage.
-            // We may also have to build the leader epoch cache. To find out the remote log segment metadata for the
+            // We may also have to build the leader epoch cache. To find out the remote log segment remoteLogMetadata for the
             // leaderLocalLogStartOffset-1, start from the current leader epoch and subtract one to the epoch till
-            // finding the metadata.
+            // finding the remoteLogMetadata.
             var previousLeaderEpoch = currentLeaderEpoch
             while (!rlsMetadata.isPresent && previousLeaderEpoch >= 0) {
               rlsMetadata = rlm.fetchRemoteLogSegmentMetadata(partition, previousLeaderEpoch, leaderLocalLogStartOffset - 1)
@@ -424,7 +424,7 @@ class AsyncReplicaFetcher(name: String,
             throw new RemoteStorageException(s"Couldn't build the state from remote store for partition: $partition, " +
               s"currentLeaderEpoch: $currentLeaderEpoch, leaderLocalLogStartOffset: $leaderLocalLogStartOffset, " +
               s"leaderLogStartOffset: $leaderLogStartOffset, epoch: $epoch as the previous remote log segment " +
-              s"metadata was not found")
+              s"remoteLogMetadata was not found")
           }
         }
       } else {

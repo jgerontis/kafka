@@ -64,11 +64,11 @@ class AdminZkClient(zkClient: KafkaZkClient) extends Logging {
   }
 
   /**
-   * Gets broker metadata list
+   * Gets broker remoteLogMetadata list
    *
    * @param rackAwareMode rack aware mode for replica assignment
-   * @param brokerList The brokers to gather metadata about.
-   * @return The metadata for each broker that was found.
+   * @param brokerList The brokers to gather remoteLogMetadata about.
+   * @return The remoteLogMetadata for each broker that was found.
    */
   def getBrokerMetadatas(rackAwareMode: RackAwareMode = RackAwareMode.Enforced,
                          brokerList: Option[Seq[Int]] = None): Seq[BrokerMetadata] = {

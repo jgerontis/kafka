@@ -93,8 +93,8 @@ object RaftControllerNodeProvider {
 }
 
 /**
- * Finds the controller node by checking the metadata log manager.
- * This provider is used when we are using a Raft-based metadata quorum.
+ * Finds the controller node by checking the remoteLogMetadata log manager.
+ * This provider is used when we are using a Raft-based remoteLogMetadata quorum.
  */
 class RaftControllerNodeProvider(val raftManager: RaftManager[ApiMessageAndVersion],
                                  controllerQuorumVoterNodes: Seq[Node],
@@ -145,7 +145,7 @@ trait BrokerToControllerChannelManager {
 
 /**
  * This class manages the connection between a broker and the controller. It runs a single
- * [[BrokerToControllerRequestThread]] which uses the broker's metadata cache as its own metadata to find
+ * [[BrokerToControllerRequestThread]] which uses the broker's remoteLogMetadata cache as its own remoteLogMetadata to find
  * and connect to the controller. The channel is async and runs the network connection in the background.
  * The maximum number of in-flight requests are set to one to ensure orderly response from the controller, therefore
  * care must be taken to not block on outstanding requests for too long.
@@ -340,7 +340,7 @@ class BrokerToControllerRequestThread(
     } else if (response.wasDisconnected()) {
       requestQueue.putFirst(queueItem)
     } else if (response.responseBody().errorCounts().containsKey(Errors.NOT_CONTROLLER)) {
-      // just close the controller connection and wait for metadata cache update in doWork
+      // just close the controller connection and wait for remoteLogMetadata cache update in doWork
       activeControllerAddress().foreach { controllerAddress => {
         try {
           // We don't care if disconnect has an error, just log it and get a new network client

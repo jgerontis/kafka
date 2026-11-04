@@ -40,8 +40,8 @@ class BrokerToControllerRequestThreadTest {
   def testRetryTimeoutWhileControllerNotAvailable(): Unit = {
     val time = new MockTime()
     val config = new KafkaConfig(TestUtils.createBrokerConfig(1, "localhost:2181"))
-    val metadata = mock(classOf[Metadata])
-    val mockClient = new MockClient(time, metadata)
+    val remoteLogMetadata = mock(classOf[Metadata])
+    val mockClient = new MockClient(time, remoteLogMetadata)
     val controllerNodeProvider = mock(classOf[ControllerNodeProvider])
 
     when(controllerNodeProvider.get()).thenReturn(None)
@@ -75,8 +75,8 @@ class BrokerToControllerRequestThreadTest {
     val config = new KafkaConfig(TestUtils.createBrokerConfig(1, "localhost:2181"))
     val controllerId = 2
 
-    val metadata = mock(classOf[Metadata])
-    val mockClient = new MockClient(time, metadata)
+    val remoteLogMetadata = mock(classOf[Metadata])
+    val mockClient = new MockClient(time, remoteLogMetadata)
 
     val controllerNodeProvider = mock(classOf[ControllerNodeProvider])
     val activeController = new Node(controllerId, "host", 1234)
@@ -117,8 +117,8 @@ class BrokerToControllerRequestThreadTest {
     val oldControllerId = 1
     val newControllerId = 2
 
-    val metadata = mock(classOf[Metadata])
-    val mockClient = new MockClient(time, metadata)
+    val remoteLogMetadata = mock(classOf[Metadata])
+    val mockClient = new MockClient(time, remoteLogMetadata)
 
     val controllerNodeProvider = mock(classOf[ControllerNodeProvider])
     val oldController = new Node(oldControllerId, "host1", 1234)
@@ -164,8 +164,8 @@ class BrokerToControllerRequestThreadTest {
     val oldControllerId = 1
     val newControllerId = 2
 
-    val metadata = mock(classOf[Metadata])
-    val mockClient = new MockClient(time, metadata)
+    val remoteLogMetadata = mock(classOf[Metadata])
+    val mockClient = new MockClient(time, remoteLogMetadata)
 
     val controllerNodeProvider = mock(classOf[ControllerNodeProvider])
     val port = 1234
@@ -223,8 +223,8 @@ class BrokerToControllerRequestThreadTest {
     val oldControllerId = 1
     val newControllerId = 2
 
-    val metadata = mock(classOf[Metadata])
-    val mockClient = new MockClient(time, metadata)
+    val remoteLogMetadata = mock(classOf[Metadata])
+    val mockClient = new MockClient(time, remoteLogMetadata)
     // enable envelope API
     mockClient.setNodeApiVersions(NodeApiVersions.create(ApiKeys.ENVELOPE.id, 0.toShort, 0.toShort))
 
@@ -293,8 +293,8 @@ class BrokerToControllerRequestThreadTest {
     val config = new KafkaConfig(TestUtils.createBrokerConfig(1, "localhost:2181"))
     val controllerId = 1
 
-    val metadata = mock(classOf[Metadata])
-    val mockClient = new MockClient(time, metadata)
+    val remoteLogMetadata = mock(classOf[Metadata])
+    val mockClient = new MockClient(time, remoteLogMetadata)
 
     val controllerNodeProvider = mock(classOf[ControllerNodeProvider])
     val controller = new Node(controllerId, "host1", 1234)
@@ -341,8 +341,8 @@ class BrokerToControllerRequestThreadTest {
     val config = new KafkaConfig(TestUtils.createBrokerConfig(1, "localhost:2181"))
     val controllerId = 2
 
-    val metadata = mock(classOf[Metadata])
-    val mockClient = new MockClient(time, metadata)
+    val remoteLogMetadata = mock(classOf[Metadata])
+    val mockClient = new MockClient(time, remoteLogMetadata)
 
     val controllerNodeProvider = mock(classOf[ControllerNodeProvider])
     val activeController = new Node(controllerId, "host", 1234)
@@ -378,8 +378,8 @@ class BrokerToControllerRequestThreadTest {
     val config = new KafkaConfig(TestUtils.createBrokerConfig(1, "localhost:2181"))
     val controllerId = 2
 
-    val metadata = mock(classOf[Metadata])
-    val mockClient = new MockClient(time, metadata)
+    val remoteLogMetadata = mock(classOf[Metadata])
+    val mockClient = new MockClient(time, remoteLogMetadata)
 
     val controllerNodeProvider = mock(classOf[ControllerNodeProvider])
     val activeController = new Node(controllerId, "host", 1234)
@@ -415,8 +415,8 @@ class BrokerToControllerRequestThreadTest {
     val time = new MockTime()
     val config = new KafkaConfig(TestUtils.createBrokerConfig(1, "localhost:2181"))
 
-    val metadata = mock(classOf[Metadata])
-    val mockClient = new MockClient(time, metadata)
+    val remoteLogMetadata = mock(classOf[Metadata])
+    val mockClient = new MockClient(time, remoteLogMetadata)
 
     val controllerNodeProvider = mock(classOf[ControllerNodeProvider])
 

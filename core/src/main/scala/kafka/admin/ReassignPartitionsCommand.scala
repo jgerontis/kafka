@@ -677,11 +677,11 @@ object ReassignPartitionsCommand extends Logging {
    * Find the rack information for some brokers.
    *
    * @param adminClient         The AdminClient object.
-   * @param brokers             The brokers to gather metadata about.
+   * @param brokers             The brokers to gather remoteLogMetadata about.
    * @param enableRackAwareness True if we should return rack information, and throw an
    *                            exception if it is inconsistent.
    *
-   * @return                    The metadata for each broker that was found.
+   * @return                    The remoteLogMetadata for each broker that was found.
    *                            Brokers that were not found will be omitted.
    */
   def getBrokerMetadata(adminClient: Admin,

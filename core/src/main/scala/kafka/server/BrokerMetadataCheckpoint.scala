@@ -194,7 +194,7 @@ object BrokerMetadataCheckpoint extends Logging {
 }
 
 /**
- * This class saves the metadata properties to a file
+ * This class saves the remoteLogMetadata properties to a file
  */
 class BrokerMetadataCheckpoint(val file: File) extends Logging {
   private val lock = new Object()

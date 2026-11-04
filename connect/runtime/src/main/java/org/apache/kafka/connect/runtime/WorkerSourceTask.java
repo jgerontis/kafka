@@ -535,7 +535,7 @@ class WorkerSourceTask extends WorkerTask {
         // Very rare case: offsets were unserializable and we finished immediately, unable to store
         // any data
         if (flushFuture == null) {
-            offsetWriter.cancelFlush();
+            finishFailedFlush();
             recordCommitFailure(time.milliseconds() - started, null);
             return false;
         }
@@ -547,17 +547,17 @@ class WorkerSourceTask extends WorkerTask {
             // could look a little confusing.
         } catch (InterruptedException e) {
             log.warn("{} Flush of offsets interrupted, cancelling", this);
-            offsetWriter.cancelFlush();
+            finishFailedFlush();
             recordCommitFailure(time.milliseconds() - started, e);
             return false;
         } catch (ExecutionException e) {
             log.error("{} Flush of offsets threw an unexpected exception: ", this, e);
-            offsetWriter.cancelFlush();
+            finishFailedFlush();
             recordCommitFailure(time.milliseconds() - started, e);
             return false;
         } catch (TimeoutException e) {
             log.error("{} Timed out waiting to flush offsets to storage; will try again on next flush interval with latest offsets", this);
-            offsetWriter.cancelFlush();
+            finishFailedFlush();
             recordCommitFailure(time.milliseconds() - started, null);
             return false;
         }
@@ -570,6 +570,22 @@ class WorkerSourceTask extends WorkerTask {
         commitSourceTask();
 
         return true;
+    }
+
+    private void finishFailedFlush() {
+        offsetWriter.cancelFlush();
+    }
+
+    private void finishFailedFlush() {
+        offsetWriter.cancelFlush();
+    }
+
+    private void finishFailedFlush() {
+        offsetWriter.cancelFlush();
+    }
+
+    private void finishFailedFlush() {
+        offsetWriter.cancelFlush();
     }
 
     private void commitSourceTask() {

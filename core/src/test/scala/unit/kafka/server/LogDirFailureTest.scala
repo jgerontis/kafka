@@ -176,7 +176,7 @@ class LogDirFailureTest extends IntegrationTestHarness {
     TestUtils.causeLogDirFailure(failureType, leaderServer, partition)
 
     TestUtils.waitUntilTrue(() => {
-      // ProduceResponse may contain KafkaStorageException and trigger metadata update
+      // ProduceResponse may contain KafkaStorageException and trigger remoteLogMetadata update
       producer.send(record)
       producer.partitionsFor(topic).asScala.find(_.partition() == 0).get.leader().id() != leaderServerId
     }, "Expected new leader for the partition", 6000L)

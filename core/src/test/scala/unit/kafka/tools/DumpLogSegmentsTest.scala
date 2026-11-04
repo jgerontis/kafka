@@ -27,11 +27,11 @@ import kafka.server.{BrokerTopicStats, FetchLogEnd, LogDirFailureChannel}
 import kafka.tools.DumpLogSegments.TimeIndexDumpErrors
 import kafka.utils.{MockTime, TestUtils}
 import org.apache.kafka.common.Uuid
-import org.apache.kafka.common.metadata.{PartitionChangeRecord, RegisterBrokerRecord, TopicRecord}
+import org.apache.kafka.common.remoteLogMetadata.{PartitionChangeRecord, RegisterBrokerRecord, TopicRecord}
 import org.apache.kafka.common.protocol.{ByteBufferAccessor, ObjectSerializationCache}
 import org.apache.kafka.common.record.{CompressionType, ControlRecordType, EndTransactionMarker, MemoryRecords, RecordVersion, SimpleRecord}
 import org.apache.kafka.common.utils.Utils
-import org.apache.kafka.metadata.MetadataRecordSerde
+import org.apache.kafka.remoteLogMetadata.MetadataRecordSerde
 import org.apache.kafka.server.common.ApiMessageAndVersion
 import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.api.{AfterEach, BeforeEach, Test}
@@ -245,15 +245,15 @@ class DumpLogSegmentsTest {
     log.appendAsLeader(MemoryRecords.withRecords(CompressionType.NONE, records:_*), leaderEpoch = 1)
     log.flush()
 
-    var output = runDumpLogSegments(Array("--cluster-metadata-decoder", "false", "--files", logFilePath))
+    var output = runDumpLogSegments(Array("--cluster-remoteLogMetadata-decoder", "false", "--files", logFilePath))
     assert(output.contains("TOPIC_RECORD"))
     assert(output.contains("BROKER_RECORD"))
 
-    output = runDumpLogSegments(Array("--cluster-metadata-decoder", "--skip-record-metadata", "false", "--files", logFilePath))
+    output = runDumpLogSegments(Array("--cluster-remoteLogMetadata-decoder", "--skip-record-remoteLogMetadata", "false", "--files", logFilePath))
     assert(output.contains("TOPIC_RECORD"))
     assert(output.contains("BROKER_RECORD"))
 
-    // Bogus metadata record
+    // Bogus remoteLogMetadata record
     val buf = ByteBuffer.allocate(4)
     val writer = new ByteBufferAccessor(buf)
     writer.writeUnsignedVarint(10000)
@@ -261,7 +261,7 @@ class DumpLogSegmentsTest {
     log.appendAsLeader(MemoryRecords.withRecords(CompressionType.NONE, new SimpleRecord(null, buf.array)), leaderEpoch = 2)
     log.appendAsLeader(MemoryRecords.withRecords(CompressionType.NONE, records:_*), leaderEpoch = 2)
 
-    output = runDumpLogSegments(Array("--cluster-metadata-decoder", "--skip-record-metadata", "false", "--files", logFilePath))
+    output = runDumpLogSegments(Array("--cluster-remoteLogMetadata-decoder", "--skip-record-remoteLogMetadata", "false", "--files", logFilePath))
     assert(output.contains("TOPIC_RECORD"))
     assert(output.contains("BROKER_RECORD"))
     assert(output.contains("skipping"))

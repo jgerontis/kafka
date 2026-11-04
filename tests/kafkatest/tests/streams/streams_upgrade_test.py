@@ -74,7 +74,7 @@ which are outlined here:
 class StreamsUpgradeTest(Test):
     """
     Test upgrading Kafka Streams (all version combination)
-    If metadata was changes, upgrade is more difficult
+    If remoteLogMetadata was changes, upgrade is more difficult
     Metadata version was bumped in 0.10.1.0 and
     subsequently bumped in 2.0.0
     """
@@ -476,8 +476,8 @@ class StreamsUpgradeTest(Test):
                     monitors[second_other_processor] = second_other_monitor
 
                     highest_version = 10
-                    version_probing_message = "Sent a version " + str(highest_version + 1) + " subscription and got version " + str(highest_version) + " assignment back (successful version probing). Downgrade subscription metadata to commonly supported version " + str(highest_version) + " and trigger new rebalance."
-                    end_of_upgrade_message = "Sent a version " + str(highest_version) + " subscription and group.s latest commonly supported version is " + str(highest_version + 1) + " (successful version probing and end of rolling upgrade). Upgrading subscription metadata version to " + str(highest_version + 1) + " for next rebalance."
+                    version_probing_message = "Sent a version " + str(highest_version + 1) + " subscription and got version " + str(highest_version) + " assignment back (successful version probing). Downgrade subscription remoteLogMetadata to commonly supported version " + str(highest_version) + " and trigger new rebalance."
+                    end_of_upgrade_message = "Sent a version " + str(highest_version) + " subscription and group.s latest commonly supported version is " + str(highest_version + 1) + " (successful version probing and end of rolling upgrade). Upgrading subscription remoteLogMetadata version to " + str(highest_version + 1) + " for next rebalance."
                     end_of_upgrade_error_message = "Could not detect 'successful version probing and end of rolling upgrade' at upgraded node "
                     followup_rebalance_message = "Triggering the followup rebalance scheduled for 0 ms."
                     followup_rebalance_error_message = "Could not detect 'Triggering followup rebalance' at node "
@@ -545,7 +545,7 @@ class StreamsUpgradeTest(Test):
         for p in self.processors:
             found = list(p.node.account.ssh_capture("grep \"" + end_of_upgrade_message + "\" " + p.LOG_FILE, allow_fail=True))
             if len(found) > 0:
-                raise Exception("Kafka Streams failed with 'group member upgraded to metadata 8 too early'")
+                raise Exception("Kafka Streams failed with 'group member upgraded to remoteLogMetadata 8 too early'")
 
     def confirm_topics_on_all_brokers(self, expected_topic_set):
         for node in self.kafka.nodes:

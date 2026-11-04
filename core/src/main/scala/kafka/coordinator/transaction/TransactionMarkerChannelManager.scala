@@ -255,14 +255,14 @@ class TransactionMarkerChannelManager(
             s"coordinator epoch $coordinatorEpoch succeeded, trying to append complete transaction log now")
           tryAppendToLog(PendingCompleteTxn(transactionalId, coordinatorEpoch, txnMetadata, newMetadata))
         } else {
-          info(s"The cached metadata $txnMetadata has changed to $epochAndMetadata after " +
+          info(s"The cached remoteLogMetadata $txnMetadata has changed to $epochAndMetadata after " +
             s"completed sending the markers with coordinator epoch $coordinatorEpoch; abort " +
-            s"transiting the metadata to $newMetadata as it may have been updated by another process")
+            s"transiting the remoteLogMetadata to $newMetadata as it may have been updated by another process")
         }
 
       case Right(None) =>
         val errorMsg = s"The coordinator still owns the transaction partition for $transactionalId, " +
-          s"but there is no metadata in the cache; this is not expected"
+          s"but there is no remoteLogMetadata in the cache; this is not expected"
         fatal(errorMsg)
         throw new IllegalStateException(errorMsg)
     }
@@ -361,12 +361,12 @@ class TransactionMarkerChannelManager(
         case None =>
           txnStateManager.getTransactionState(transactionalId) match {
             case Left(error) =>
-              info(s"Encountered $error trying to fetch transaction metadata for $transactionalId with coordinator epoch $coordinatorEpoch; cancel sending markers to its partition leaders")
+              info(s"Encountered $error trying to fetch transaction remoteLogMetadata for $transactionalId with coordinator epoch $coordinatorEpoch; cancel sending markers to its partition leaders")
               transactionsWithPendingMarkers.remove(transactionalId)
 
             case Right(Some(epochAndMetadata)) =>
               if (epochAndMetadata.coordinatorEpoch != coordinatorEpoch) {
-                info(s"The cached metadata has changed to $epochAndMetadata (old coordinator epoch is $coordinatorEpoch) since preparing to send markers; cancel sending markers to its partition leaders")
+                info(s"The cached remoteLogMetadata has changed to $epochAndMetadata (old coordinator epoch is $coordinatorEpoch) since preparing to send markers; cancel sending markers to its partition leaders")
                 transactionsWithPendingMarkers.remove(transactionalId)
               } else {
                 // if the leader of the partition is unknown, skip sending the txn marker since
@@ -385,7 +385,7 @@ class TransactionMarkerChannelManager(
 
             case Right(None) =>
               val errorMsg = s"The coordinator still owns the transaction partition for $transactionalId, but there is " +
-                s"no metadata in the cache; this is not expected"
+                s"no remoteLogMetadata in the cache; this is not expected"
               fatal(errorMsg)
               throw new IllegalStateException(errorMsg)
 

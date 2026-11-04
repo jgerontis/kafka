@@ -37,16 +37,16 @@ remote.log.storage.manager.impl.prefix=remote.log.storage.local.
 remote.log.storage.local.dir=/tmp/kafka-remote-storage
 
 # Remote Log Metadata Manager Config
-remote.log.metadata.manager.class.name=org.apache.kafka.server.log.remote.metadata.storage.TopicBasedRemoteLogMetadataManager
-remote.log.metadata.manager.class.path=
-remote.log.metadata.manager.listener.name=PLAINTEXT
+remote.log.remoteLogMetadata.manager.class.name=org.apache.kafka.server.log.remote.remoteLogMetadata.storage.TopicBasedRemoteLogMetadataManager
+remote.log.remoteLogMetadata.manager.class.path=
+remote.log.remoteLogMetadata.manager.listener.name=PLAINTEXT
 remote.log.manager.task.interval.ms=30000
 remote.log.manager.thread.pool.size=10
 remote.log.reader.max.pending.tasks=100
-remote.log.metadata.manager.impl.prefix=rlmm.config.
-rlmm.config.remote.log.metadata.topic.num.partitions=5
-rlmm.config.remote.log.metadata.topic.replication.factor=3
-rlmm.config.remote.log.metadata.topic.retention.ms=-1
+remote.log.remoteLogMetadata.manager.impl.prefix=rlmm.config.
+rlmm.config.remote.log.remoteLogMetadata.topic.num.partitions=5
+rlmm.config.remote.log.remoteLogMetadata.topic.replication.factor=3
+rlmm.config.remote.log.remoteLogMetadata.topic.retention.ms=-1
 
 log.retention.check.interval.ms=1000
 log.segment.delete.delay.ms=1000
@@ -117,8 +117,8 @@ sh kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic samsung -
 # Rename the <uuid>-segment to its corresponding base offset log filename (No need to match the actual base offset with 
 # filename, any offset number can do fine).  The number format should contain 20 digits. e.g. 00000000000000000001.log 
 sh kafka-dump-log.sh --files 00000000000000000001.log -print-data-log
-# To dump the remote log metadata and view its contents:
-sh kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic __remote_log_metadata --from-beginning --formatter org.apache.kafka.server.log.remote.metadata.storage.serialization.RemoteLogMetadataFormatter
+# To dump the remote log remoteLogMetadata and view its contents:
+sh kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic __remote_log_metadata --from-beginning --formatter org.apache.kafka.server.log.remote.remoteLogMetadata.storage.serialization.RemoteLogMetadataFormatter
 ```
 
 To change the leader, run kafka-reassign-partitions and kafka-leader-election script:

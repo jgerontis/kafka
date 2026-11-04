@@ -37,7 +37,7 @@ import kafka.metrics.KafkaYammerMetrics
 import kafka.network.RequestChannel
 import kafka.server._
 import kafka.server.checkpoints.OffsetCheckpointFile
-import kafka.server.metadata.{ConfigRepository, MockConfigRepository}
+import kafka.server.remoteLogMetadata.{ConfigRepository, MockConfigRepository}
 import kafka.utils.Implicits._
 import kafka.zk._
 import org.apache.kafka.clients.CommonClientConfigs
@@ -347,7 +347,7 @@ object TestUtils extends Logging {
 
   /**
    * Create a topic in ZooKeeper.
-   * Wait until the leader is elected and the metadata is propagated to all brokers.
+   * Wait until the leader is elected and the remoteLogMetadata is propagated to all brokers.
    * Return the leader for each partition.
    */
   def createTopic(zkClient: KafkaZkClient,
@@ -369,18 +369,18 @@ object TestUtils extends Logging {
       !hasSessionExpirationException},
       s"Can't create topic $topic")
 
-    // wait until we've propagated all partitions metadata to all servers
+    // wait until we've propagated all partitions remoteLogMetadata to all servers
     val allPartitionsMetadata = waitForAllPartitionsMetadata(servers, topic, numPartitions)
 
     (0 until numPartitions).map { i =>
       i -> allPartitionsMetadata.get(new TopicPartition(topic, i)).map(_.leader()).getOrElse(
-        throw new IllegalStateException(s"Cannot get the partition leader for topic: $topic, partition: $i in server metadata cache"))
+        throw new IllegalStateException(s"Cannot get the partition leader for topic: $topic, partition: $i in server remoteLogMetadata cache"))
     }.toMap
   }
 
   /**
    * Create a topic in ZooKeeper using a customized replica assignment.
-   * Wait until the leader is elected and the metadata is propagated to all brokers.
+   * Wait until the leader is elected and the remoteLogMetadata is propagated to all brokers.
    * Return the leader for each partition.
    */
   def createTopic(zkClient: KafkaZkClient,
@@ -392,7 +392,7 @@ object TestUtils extends Logging {
 
   /**
    * Create a topic in ZooKeeper using a customized replica assignment.
-   * Wait until the leader is elected and the metadata is propagated to all brokers.
+   * Wait until the leader is elected and the remoteLogMetadata is propagated to all brokers.
    * Return the leader for each partition.
    */
   def createTopic(zkClient: KafkaZkClient,
@@ -413,17 +413,17 @@ object TestUtils extends Logging {
       !hasSessionExpirationException},
       s"Can't create topic $topic")
 
-    // wait until we've propagated all partitions metadata to all servers
+    // wait until we've propagated all partitions remoteLogMetadata to all servers
     val allPartitionsMetadata = waitForAllPartitionsMetadata(servers, topic, partitionReplicaAssignment.size)
 
     partitionReplicaAssignment.keySet.map { i =>
       i -> allPartitionsMetadata.get(new TopicPartition(topic, i)).map(_.leader()).getOrElse(
-        throw new IllegalStateException(s"Cannot get the partition leader for topic: $topic, partition: $i in server metadata cache"))
+        throw new IllegalStateException(s"Cannot get the partition leader for topic: $topic, partition: $i in server remoteLogMetadata cache"))
     }.toMap
   }
 
   /**
-    * Create the consumer offsets/group metadata topic and wait until the leader is elected and metadata is propagated
+    * Create the consumer offsets/group remoteLogMetadata topic and wait until the leader is elected and remoteLogMetadata is propagated
     * to all brokers.
     */
   def createOffsetsTopic(zkClient: KafkaZkClient, servers: Seq[KafkaServer]): Unit = {
@@ -946,16 +946,16 @@ object TestUtils extends Logging {
     val expectedBrokerIds = servers.map(_.config.brokerId).toSet
     waitUntilTrue(() => servers.forall(server =>
       expectedBrokerIds == server.dataPlaneRequestProcessor.metadataCache.getAliveBrokers().map(_.id).toSet
-    ), "Timed out waiting for broker metadata to propagate to all servers", timeout)
+    ), "Timed out waiting for broker remoteLogMetadata to propagate to all servers", timeout)
   }
 
   /**
-   * Wait until the expected number of partitions is in the metadata cache in each broker.
+   * Wait until the expected number of partitions is in the remoteLogMetadata cache in each broker.
    *
-   * @param servers The list of servers that the metadata should reach to
+   * @param servers The list of servers that the remoteLogMetadata should reach to
    * @param topic The topic name
    * @param expectedNumPartitions The expected number of partitions
-   * @return all partitions metadata
+   * @return all partitions remoteLogMetadata
    */
   def waitForAllPartitionsMetadata(servers: Seq[KafkaServer],
                                    topic: String, expectedNumPartitions: Int): Map[TopicPartition, UpdateMetadataPartitionState] = {
@@ -963,12 +963,12 @@ object TestUtils extends Logging {
       () => servers.forall { server =>
         server.metadataCache.numPartitions(topic) == Some(expectedNumPartitions)
       },
-      s"Topic [$topic] metadata not propagated after 60000 ms", waitTimeMs = 60000L)
+      s"Topic [$topic] remoteLogMetadata not propagated after 60000 ms", waitTimeMs = 60000L)
 
-    // since the metadata is propagated, we should get the same metadata from each server
+    // since the remoteLogMetadata is propagated, we should get the same remoteLogMetadata from each server
     (0 until expectedNumPartitions).map { i =>
       new TopicPartition(topic, i) -> servers.head.metadataCache.getPartitionInfo(topic, i).getOrElse(
-          throw new IllegalStateException(s"Cannot get topic: $topic, partition: $i in server metadata cache"))
+          throw new IllegalStateException(s"Cannot get topic: $topic, partition: $i in server remoteLogMetadata cache"))
     }.toMap
   }
 
@@ -1004,14 +1004,14 @@ object TestUtils extends Logging {
   }
 
   /**
-   * Wait until a valid leader is propagated to the metadata cache in each broker.
+   * Wait until a valid leader is propagated to the remoteLogMetadata cache in each broker.
    * It assumes that the leader propagated to each broker is the same.
    *
-   * @param servers The list of servers that the metadata should reach to
+   * @param servers The list of servers that the remoteLogMetadata should reach to
    * @param topic The topic name
    * @param partition The partition Id
    * @param timeout The amount of time waiting on this condition before assert to fail
-   * @return The metadata of the partition.
+   * @return The remoteLogMetadata of the partition.
    */
   def waitForPartitionMetadata(servers: Seq[KafkaServer], topic: String, partition: Int,
                                timeout: Long = JTestUtils.DEFAULT_MAX_WAIT_MS): UpdateMetadataPartitionState = {
@@ -1022,11 +1022,11 @@ object TestUtils extends Logging {
           case _ => false
         }
       },
-      "Partition [%s,%d] metadata not propagated after %d ms".format(topic, partition, timeout),
+      "Partition [%s,%d] remoteLogMetadata not propagated after %d ms".format(topic, partition, timeout),
       waitTimeMs = timeout)
 
     servers.head.metadataCache.getPartitionInfo(topic, partition).getOrElse(
-      throw new IllegalStateException(s"Cannot get topic: $topic, partition: $partition in server metadata cache"))
+      throw new IllegalStateException(s"Cannot get topic: $topic, partition: $partition in server remoteLogMetadata cache"))
   }
 
   def waitUntilControllerElected(zkClient: KafkaZkClient, timeout: Long = JTestUtils.DEFAULT_MAX_WAIT_MS): Int = {
@@ -1724,7 +1724,7 @@ object TestUtils extends Logging {
       } catch {
         case e: ExecutionException if e.getCause.isInstanceOf[UnknownTopicOrPartitionException] => false
       }
-    }, "Timed out waiting for leader metadata")
+    }, "Timed out waiting for leader remoteLogMetadata")
   }
 
   def waitForBrokersOutOfIsr(client: Admin, partition: Set[TopicPartition], brokerIds: Set[Int]): Unit = {

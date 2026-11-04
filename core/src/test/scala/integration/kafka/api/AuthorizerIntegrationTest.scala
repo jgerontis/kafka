@@ -473,7 +473,7 @@ class AuthorizerIntegrationTest extends BaseRequestTest {
                   .setCommittedOffset(0)
                   .setCommittedLeaderEpoch(RecordBatch.NO_PARTITION_LEADER_EPOCH)
                   .setCommitTimestamp(OffsetCommitRequest.DEFAULT_TIMESTAMP)
-                  .setCommittedMetadata("metadata")
+                  .setCommittedMetadata("remoteLogMetadata")
               )))
           )
     ).build()
@@ -1424,13 +1424,13 @@ class AuthorizerIntegrationTest extends BaseRequestTest {
 
     val offset = 15L
     val leaderEpoch: Optional[Integer] = Optional.of(1)
-    val metadata = "metadata"
+    val remoteLogMetadata = "remoteLogMetadata"
 
     def commitOffsets(tpList: util.List[TopicPartition]): Unit = {
       val consumer = createConsumer()
       consumer.assign(tpList)
       val offsets = tpList.asScala.map{
-        tp => (tp, new OffsetAndMetadata(offset, leaderEpoch, metadata))
+        tp => (tp, new OffsetAndMetadata(offset, leaderEpoch, remoteLogMetadata))
       }.toMap.asJava
       consumer.commitSync(offsets)
       consumer.close()
@@ -1448,7 +1448,7 @@ class AuthorizerIntegrationTest extends BaseRequestTest {
     def verifyPartitionData(partitionData: OffsetFetchResponse.PartitionData): Unit = {
       assertTrue(!partitionData.hasError)
       assertEquals(offset, partitionData.offset)
-      assertEquals(metadata, partitionData.metadata)
+      assertEquals(remoteLogMetadata, partitionData.remoteLogMetadata)
       assertEquals(leaderEpoch.get(), partitionData.leaderEpoch.get())
     }
 
@@ -1924,7 +1924,7 @@ class AuthorizerIntegrationTest extends BaseRequestTest {
     createTopic(topic)
 
     addAndVerifyAcls(Set(new AccessControlEntry(clientPrincipalString, WildcardHost, WRITE, ALLOW)), transactionalIdResource)
-    // add describe access so that we can fetch metadata
+    // add describe access so that we can fetch remoteLogMetadata
     addAndVerifyAcls(Set(new AccessControlEntry(clientPrincipalString, WildcardHost, DESCRIBE, ALLOW)), topicResource)
     val producer = buildTransactionalProducer()
     producer.initTransactions()
@@ -1940,7 +1940,7 @@ class AuthorizerIntegrationTest extends BaseRequestTest {
     createTopic(topic)
 
     addAndVerifyAcls(Set(new AccessControlEntry(clientPrincipalString, WildcardHost, WRITE, ALLOW)), transactionalIdResource)
-    // add describe access so that we can fetch metadata
+    // add describe access so that we can fetch remoteLogMetadata
     addAndVerifyAcls(Set(new AccessControlEntry(clientPrincipalString, WildcardHost, DESCRIBE, ALLOW)), topicResource)
     val producer = buildTransactionalProducer()
     producer.initTransactions()
@@ -2078,7 +2078,7 @@ class AuthorizerIntegrationTest extends BaseRequestTest {
     producer.send(new ProducerRecord(tp.topic, tp.partition, "1".getBytes, "1".getBytes)).get
   }
 
-  // Verify that metadata request without topics works without any ACLs and returns cluster id
+  // Verify that remoteLogMetadata request without topics works without any ACLs and returns cluster id
   @Test
   def testClusterId(): Unit = {
     val request = new requests.MetadataRequest.Builder(List.empty.asJava, false).build()

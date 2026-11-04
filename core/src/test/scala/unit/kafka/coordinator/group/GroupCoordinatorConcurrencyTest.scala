@@ -45,8 +45,8 @@ class GroupCoordinatorConcurrencyTest extends AbstractCoordinatorConcurrencyTest
 
   private val protocolType = "consumer"
   private val protocolName = "range"
-  private val metadata = Array[Byte]()
-  private val protocols = List((protocolName, metadata))
+  private val remoteLogMetadata = Array[Byte]()
+  private val protocols = List((protocolName, remoteLogMetadata))
 
   private val nGroups = nThreads * 10
   private val nMembersPerGroup = nThreads * 5
@@ -304,7 +304,7 @@ class GroupCoordinatorConcurrencyTest extends AbstractCoordinatorConcurrencyTest
       val producerId = 1000L
       val producerEpoch : Short = 2
       // When transaction offsets are appended to the log, transactions may be scheduled for
-      // completion. Since group metadata locks are acquired for transaction completion, include
+      // completion. Since group remoteLogMetadata locks are acquired for transaction completion, include
       // this in the callback to test that there are no deadlocks.
       def callbackWithTxnCompletion(errors: Map[TopicPartition, Errors]): Unit = {
         val offsetsPartitions = (0 to numPartitions).map(new TopicPartition(Topic.GROUP_METADATA_TOPIC_NAME, _))

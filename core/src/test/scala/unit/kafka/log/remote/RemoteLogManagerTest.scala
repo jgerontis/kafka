@@ -65,12 +65,12 @@ class RemoteLogManagerTest {
     val rlmmConfigPrefix = RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_METADATA_MANAGER_CONFIG_PREFIX
     val props: Properties = new Properties()
     props.put(rlmmConfigPrefix + key, "world")
-    props.put("remote.log.metadata.y", "z")
+    props.put("remote.log.remoteLogMetadata.y", "z")
 
     val rlmConfig = createRLMConfig(props)
     val rlmmConfig = rlmConfig.remoteLogMetadataManagerProps()
     assertEquals(props.get(rlmmConfigPrefix + key), rlmmConfig.get(key))
-    assertFalse(rlmmConfig.containsKey("remote.log.metadata.y"))
+    assertFalse(rlmmConfig.containsKey("remote.log.remoteLogMetadata.y"))
   }
 
   @Test

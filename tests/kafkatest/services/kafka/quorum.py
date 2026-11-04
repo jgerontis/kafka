@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# the types of metadata quorums we support
+# the types of remoteLogMetadata quorums we support
 zk = 'ZK' # ZooKeeper, used before/during the KIP-500 bridge release(s)
 colocated_kraft = 'COLOCATED_KRAFT' # co-located Controllers in KRaft mode, used during/after the KIP-500 bridge release(s)
 remote_kraft = 'REMOTE_KRAFT' # separate Controllers in KRaft mode, used during/after the KIP-500 bridge release(s)
@@ -31,7 +31,7 @@ all_kraft = [remote_kraft, colocated_kraft]
 all_non_upgrade = [zk, remote_kraft]
 
 def for_test(test_context):
-    # A test uses ZooKeeper if it doesn't specify a metadata quorum or if it explicitly specifies ZooKeeper
+    # A test uses ZooKeeper if it doesn't specify a remoteLogMetadata quorum or if it explicitly specifies ZooKeeper
     default_quorum_type = zk
     arg_name = 'metadata_quorum'
     retval = default_quorum_type if not test_context.injected_args else test_context.injected_args.get(arg_name, default_quorum_type)
@@ -44,7 +44,7 @@ class ServiceQuorumInfo:
     Exposes quorum-related information for a KafkaService
 
     Kafka can use either ZooKeeper or a KRaft (Kafka Raft) Controller quorum for
-    its metadata.  KRaft Controllers can either be co-located with Kafka in
+    its remoteLogMetadata.  KRaft Controllers can either be co-located with Kafka in
     the same JVM or remote in separate JVMs.  The choice is made via
     the 'metadata_quorum' parameter defined for the system test: if it
     is not explicitly defined, or if it is set to 'ZK', then ZooKeeper
@@ -91,9 +91,9 @@ class ServiceQuorumInfo:
 
         quorum_type = for_test(context)
         if quorum_type != zk and kafka.zk and not kafka.allow_zk_with_kraft:
-            raise Exception("Cannot use ZooKeeper while specifying a KRaft metadata quorum unless explicitly allowing it")
+            raise Exception("Cannot use ZooKeeper while specifying a KRaft remoteLogMetadata quorum unless explicitly allowing it")
         if kafka.remote_kafka and quorum_type != remote_kraft:
-            raise Exception("Cannot specify a remote Kafka service unless using a remote KRaft metadata quorum (should not happen)")
+            raise Exception("Cannot specify a remote Kafka service unless using a remote KRaft remoteLogMetadata quorum (should not happen)")
         self.kafka = kafka
         self.quorum_type = quorum_type
         self.using_zk = quorum_type == zk

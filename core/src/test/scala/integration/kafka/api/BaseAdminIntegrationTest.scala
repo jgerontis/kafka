@@ -242,9 +242,9 @@ abstract class BaseAdminIntegrationTest extends IntegrationTestHarness with Logg
         result = topicResult.get
         expectedNumPartitionsOpt.map(_ == result.partitions.size).getOrElse(true)
       } catch {
-        case e: ExecutionException if e.getCause.isInstanceOf[UnknownTopicOrPartitionException] => false  // metadata may not have propagated yet, so retry
+        case e: ExecutionException if e.getCause.isInstanceOf[UnknownTopicOrPartitionException] => false  // remoteLogMetadata may not have propagated yet, so retry
       }
-    }, s"Timed out waiting for metadata for $topic")
+    }, s"Timed out waiting for remoteLogMetadata for $topic")
     result
   }
 

@@ -75,11 +75,11 @@ class GroupMetadataManager(brokerId: Int,
   /* shutting down flag */
   private val shuttingDown = new AtomicBoolean(false)
 
-  /* number of partitions for the consumer metadata topic */
+  /* number of partitions for the consumer remoteLogMetadata topic */
   @volatile private var groupMetadataTopicPartitionCount: Int = _
 
-  /* single-thread scheduler to handle offset/group metadata cache loading and unloading */
-  private val scheduler = new KafkaScheduler(threads = 1, threadNamePrefix = "group-metadata-manager-")
+  /* single-thread scheduler to handle offset/group remoteLogMetadata cache loading and unloading */
+  private val scheduler = new KafkaScheduler(threads = 1, threadNamePrefix = "group-remoteLogMetadata-manager-")
 
   /* The groups with open transactional offsets commits per producer. We need this because when the commit or abort
    * marker comes in for a transaction, it is for a particular partition on the offsets topic and a particular producerId.
@@ -175,7 +175,7 @@ class GroupMetadataManager(brokerId: Int,
     groupMetadataTopicPartitionCount = retrieveGroupMetadataTopicPartitionCount()
     scheduler.startup()
     if (enableMetadataExpiration) {
-      scheduler.schedule(name = "delete-expired-group-metadata",
+      scheduler.schedule(name = "delete-expired-group-remoteLogMetadata",
         fun = () => cleanupGroupMetadata(),
         period = config.offsetsRetentionCheckIntervalMs,
         unit = TimeUnit.MILLISECONDS)
@@ -299,13 +299,13 @@ class GroupMetadataManager(brokerId: Int,
                    | Errors.RECORD_LIST_TOO_LARGE
                    | Errors.INVALID_FETCH_SIZE =>
 
-                error(s"Appending metadata message for group ${group.groupId} generation $generationId failed due to " +
+                error(s"Appending remoteLogMetadata message for group ${group.groupId} generation $generationId failed due to " +
                   s"${status.error.exceptionName}, returning UNKNOWN error code to the client")
 
                 Errors.UNKNOWN_SERVER_ERROR
 
               case other =>
-                error(s"Appending metadata message for group ${group.groupId} generation $generationId failed " +
+                error(s"Appending remoteLogMetadata message for group ${group.groupId} generation $generationId failed " +
                   s"due to unexpected error: ${status.error.exceptionName}")
 
                 other
@@ -348,9 +348,9 @@ class GroupMetadataManager(brokerId: Int,
                    producerId: Long = RecordBatch.NO_PRODUCER_ID,
                    producerEpoch: Short = RecordBatch.NO_PRODUCER_EPOCH,
                    requestLocal: RequestLocal = RequestLocal.NoCaching): Unit = {
-    // first filter out partitions with offset metadata size exceeding limit
+    // first filter out partitions with offset remoteLogMetadata size exceeding limit
     val filteredOffsetMetadata = offsetMetadata.filter { case (_, offsetAndMetadata) =>
-      validateOffsetMetadataLength(offsetAndMetadata.metadata)
+      validateOffsetMetadataLength(offsetAndMetadata.remoteLogMetadata)
     }
 
     group.inLock {
@@ -398,7 +398,7 @@ class GroupMetadataManager(brokerId: Int,
                 .format(responseStatus, offsetTopicPartition))
 
             // construct the commit response status and insert
-            // the offset and metadata to cache if the append status has no error
+            // the offset and remoteLogMetadata to cache if the append status has no error
             val status = responseStatus(offsetTopicPartition)
 
             val responseError = group.inLock {
@@ -454,7 +454,7 @@ class GroupMetadataManager(brokerId: Int,
 
             // compute the final error codes for the commit response
             val commitStatus = offsetMetadata.map { case (topicPartition, offsetAndMetadata) =>
-              if (validateOffsetMetadataLength(offsetAndMetadata.metadata))
+              if (validateOffsetMetadataLength(offsetAndMetadata.remoteLogMetadata))
                 (topicPartition, responseError)
               else
                 (topicPartition, Errors.OFFSET_METADATA_TOO_LARGE)
@@ -521,7 +521,7 @@ class GroupMetadataManager(brokerId: Int,
                     Optional.empty(), "", Errors.NONE)
                 case Some(offsetAndMetadata) =>
                   new PartitionData(offsetAndMetadata.offset,
-                    offsetAndMetadata.leaderEpoch, offsetAndMetadata.metadata, Errors.NONE)
+                    offsetAndMetadata.leaderEpoch, offsetAndMetadata.remoteLogMetadata, Errors.NONE)
               }
               topicPartition -> partitionData
             }
@@ -536,7 +536,7 @@ class GroupMetadataManager(brokerId: Int,
    */
   def scheduleLoadGroupAndOffsets(offsetsPartition: Int, coordinatorEpoch: Int, onGroupLoaded: GroupMetadata => Unit): Unit = {
     val topicPartition = new TopicPartition(Topic.GROUP_METADATA_TOPIC_NAME, offsetsPartition)
-    info(s"Scheduling loading of offsets and group metadata from $topicPartition for epoch $coordinatorEpoch")
+    info(s"Scheduling loading of offsets and group remoteLogMetadata from $topicPartition for epoch $coordinatorEpoch")
     val startTimeMs = time.milliseconds()
     scheduler.schedule(topicPartition.toString, () => loadGroupsAndOffsets(topicPartition, coordinatorEpoch, onGroupLoaded, startTimeMs))
   }
@@ -548,19 +548,19 @@ class GroupMetadataManager(brokerId: Int,
     startTimeMs: java.lang.Long
   ): Unit = {
     if (!maybeUpdateCoordinatorEpoch(topicPartition.partition, Some(coordinatorEpoch))) {
-      info(s"Not loading offsets and group metadata for $topicPartition " +
+      info(s"Not loading offsets and group remoteLogMetadata for $topicPartition " +
         s"in epoch $coordinatorEpoch since current epoch is ${epochForPartitionId.get(topicPartition.partition)}")
     } else if (!addLoadingPartition(topicPartition.partition)) {
-      info(s"Already loading offsets and group metadata from $topicPartition")
+      info(s"Already loading offsets and group remoteLogMetadata from $topicPartition")
     } else {
       try {
         val schedulerTimeMs = time.milliseconds() - startTimeMs
-        debug(s"Started loading offsets and group metadata from $topicPartition for epoch $coordinatorEpoch")
+        debug(s"Started loading offsets and group remoteLogMetadata from $topicPartition for epoch $coordinatorEpoch")
         doLoadGroupsAndOffsets(topicPartition, onGroupLoaded)
         val endTimeMs = time.milliseconds()
         val totalLoadingTimeMs = endTimeMs - startTimeMs
         partitionLoadSensor.record(totalLoadingTimeMs.toDouble, endTimeMs, false)
-        info(s"Finished loading offsets and group metadata from $topicPartition "
+        info(s"Finished loading offsets and group remoteLogMetadata from $topicPartition "
           + s"in $totalLoadingTimeMs milliseconds for epoch $coordinatorEpoch, of which " +
           s"$schedulerTimeMs milliseconds was spent in the scheduler.")
       } catch {
@@ -579,7 +579,7 @@ class GroupMetadataManager(brokerId: Int,
 
     replicaManager.getLog(topicPartition) match {
       case None =>
-        warn(s"Attempted to load offsets and group metadata from $topicPartition, but found no log")
+        warn(s"Attempted to load offsets and group remoteLogMetadata from $topicPartition, but found no log")
 
       case Some(log) =>
         val loadedOffsets = mutable.Map[GroupTopicPartition, CommitRecordMetadataAndOffset]()
@@ -613,7 +613,7 @@ class GroupMetadataManager(brokerId: Int,
               // minOneMessage = true in the above log.read means that the buffer may need to be grown to ensure progress can be made
               if (buffer.capacity < bytesNeeded) {
                 if (config.loadBufferSize < bytesNeeded)
-                  warn(s"Loaded offsets and group metadata from $topicPartition with buffer larger ($bytesNeeded bytes) than " +
+                  warn(s"Loaded offsets and group remoteLogMetadata from $topicPartition with buffer larger ($bytesNeeded bytes) than " +
                     s"configured offsets.load.buffer.size (${config.loadBufferSize} bytes)")
 
                 buffer = ByteBuffer.allocate(bytesNeeded)
@@ -645,7 +645,7 @@ class GroupMetadataManager(brokerId: Int,
             } else {
               var batchBaseOffset: Option[Long] = None
               for (record <- batch.asScala) {
-                require(record.hasKey, "Group metadata/offset entry key should not be null")
+                require(record.hasKey, "Group remoteLogMetadata/offset entry key should not be null")
                 if (batchBaseOffset.isEmpty)
                   batchBaseOffset = Some(record.offset)
                 GroupMetadataManager.readMessageKey(record.key) match {
@@ -670,7 +670,7 @@ class GroupMetadataManager(brokerId: Int,
                     }
 
                   case groupMetadataKey: GroupMetadataKey =>
-                    // load group metadata
+                    // load group remoteLogMetadata
                     val groupId = groupMetadataKey.key
                     val groupMetadata = GroupMetadataManager.readGroupMessageValue(groupId, record.value, time)
                     if (groupMetadata != null) {
@@ -682,7 +682,7 @@ class GroupMetadataManager(brokerId: Int,
                     }
 
                   case unknownKey =>
-                    throw new IllegalStateException(s"Unexpected message key $unknownKey while loading offsets and group metadata")
+                    throw new IllegalStateException(s"Unexpected message key $unknownKey while loading offsets and group remoteLogMetadata")
                 }
               }
             }
@@ -716,18 +716,18 @@ class GroupMetadataManager(brokerId: Int,
         loadedGroups.values.foreach { group =>
           val offsets = groupOffsets.getOrElse(group.groupId, Map.empty[TopicPartition, CommitRecordMetadataAndOffset])
           val pendingOffsets = pendingGroupOffsets.getOrElse(group.groupId, Map.empty[Long, mutable.Map[TopicPartition, CommitRecordMetadataAndOffset]])
-          debug(s"Loaded group metadata $group with offsets $offsets and pending offsets $pendingOffsets")
+          debug(s"Loaded group remoteLogMetadata $group with offsets $offsets and pending offsets $pendingOffsets")
           loadGroup(group, offsets, pendingOffsets)
           onGroupLoaded(group)
         }
 
         // load groups which store offsets in kafka, but which have no active members and thus no group
-        // metadata stored in the log
+        // remoteLogMetadata stored in the log
         (emptyGroupOffsets.keySet ++ pendingEmptyGroupOffsets.keySet).foreach { groupId =>
           val group = new GroupMetadata(groupId, Empty, time)
           val offsets = emptyGroupOffsets.getOrElse(groupId, Map.empty[TopicPartition, CommitRecordMetadataAndOffset])
           val pendingOffsets = pendingEmptyGroupOffsets.getOrElse(groupId, Map.empty[Long, mutable.Map[TopicPartition, CommitRecordMetadataAndOffset]])
-          debug(s"Loaded group metadata $group with offsets $offsets and pending offsets $pendingOffsets")
+          debug(s"Loaded group remoteLogMetadata $group with offsets $offsets and pending offsets $pendingOffsets")
           loadGroup(group, offsets, pendingOffsets)
           onGroupLoaded(group)
         }
@@ -766,7 +766,7 @@ class GroupMetadataManager(brokerId: Int,
                                coordinatorEpoch: Option[Int],
                                onGroupUnloaded: GroupMetadata => Unit): Unit = {
     val topicPartition = new TopicPartition(Topic.GROUP_METADATA_TOPIC_NAME, offsetsPartition)
-    info(s"Scheduling unloading of offsets and group metadata from $topicPartition")
+    info(s"Scheduling unloading of offsets and group remoteLogMetadata from $topicPartition")
     scheduler.schedule(topicPartition.toString, () => removeGroupsAndOffsets(topicPartition, coordinatorEpoch, onGroupUnloaded))
   }
 
@@ -778,7 +778,7 @@ class GroupMetadataManager(brokerId: Int,
       var numOffsetsRemoved = 0
       var numGroupsRemoved = 0
 
-      debug(s"Started unloading offsets and group metadata for $topicPartition for " +
+      debug(s"Started unloading offsets and group remoteLogMetadata for $topicPartition for " +
         s"coordinator epoch $coordinatorEpoch")
       inLock(partitionLock) {
         // we need to guard the group removal in cache in the loading partition lock
@@ -799,7 +799,7 @@ class GroupMetadataManager(brokerId: Int,
       info(s"Finished unloading $topicPartition for coordinator epoch $coordinatorEpoch. " +
         s"Removed $numOffsetsRemoved cached offsets and $numGroupsRemoved cached groups.")
     } else {
-      info(s"Not removing offsets and group metadata for $topicPartition " +
+      info(s"Not removing offsets and group remoteLogMetadata for $topicPartition " +
         s"in epoch $coordinatorEpoch since current epoch is ${epochForPartitionId.get(topicPartition.partition)}")
     }
   }
@@ -837,7 +837,7 @@ class GroupMetadataManager(brokerId: Int,
 
   /**
     * This function is used to clean up group offsets given the groups and also a function that performs the offset deletion.
-    * @param groups Groups whose metadata are to be cleaned up
+    * @param groups Groups whose remoteLogMetadata are to be cleaned up
     * @param selector A function that implements deletion of (all or part of) group offsets. This function is called while
     *                 a group lock is held, therefore there is no need for the caller to also obtain a group lock.
     * @return The cumulative number of offsets removed
@@ -868,7 +868,7 @@ class GroupMetadataManager(brokerId: Int,
           replicaManager.onlinePartition(appendPartition).foreach { partition =>
             val tombstones = ArrayBuffer.empty[SimpleRecord]
             removedOffsets.forKeyValue { (topicPartition, offsetAndMetadata) =>
-              trace(s"Removing expired/deleted offset and metadata for $groupId, $topicPartition: $offsetAndMetadata")
+              trace(s"Removing expired/deleted offset and remoteLogMetadata for $groupId, $topicPartition: $offsetAndMetadata")
               val commitKey = GroupMetadataManager.offsetCommitKey(groupId, topicPartition)
               tombstones += new SimpleRecord(timestamp, commitKey, null)
             }
@@ -882,7 +882,7 @@ class GroupMetadataManager(brokerId: Int,
               // retry removing this group.
               val groupMetadataKey = GroupMetadataManager.groupMetadataKey(group.groupId)
               tombstones += new SimpleRecord(timestamp, groupMetadataKey, null)
-              trace(s"Group $groupId removed from the metadata cache and marked for deletion in $appendPartition.")
+              trace(s"Group $groupId removed from the remoteLogMetadata cache and marked for deletion in $appendPartition.")
             }
 
             if (tombstones.nonEmpty) {
@@ -895,11 +895,11 @@ class GroupMetadataManager(brokerId: Int,
 
                 offsetsRemoved += removedOffsets.size
                 trace(s"Successfully appended ${tombstones.size} tombstones to $appendPartition for expired/deleted " +
-                  s"offsets and/or metadata for group $groupId")
+                  s"offsets and/or remoteLogMetadata for group $groupId")
               } catch {
                 case t: Throwable =>
                   error(s"Failed to append ${tombstones.size} tombstones to $appendPartition for expired/deleted " +
-                    s"offsets and/or metadata for group $groupId.", t)
+                    s"offsets and/or remoteLogMetadata for group $groupId.", t)
                 // ignore and continue
               }
             }
@@ -918,7 +918,7 @@ class GroupMetadataManager(brokerId: Int,
    * `completedPartitions`. This method is invoked when a commit or abort marker is fully written
    * to the log. It may be invoked when a group lock is held by the caller, for instance when delayed
    * operations are completed while appending offsets for a group. Since we need to acquire one or
-   * more group metadata locks to handle transaction completion, this operation is scheduled on
+   * more group remoteLogMetadata locks to handle transaction completion, this operation is scheduled on
    * the scheduler thread to avoid deadlocks.
    */
   def scheduleHandleTxnCompletion(producerId: Long, completedPartitions: Set[Int], isCommit: Boolean): Unit = {
@@ -966,10 +966,10 @@ class GroupMetadataManager(brokerId: Int,
   }
 
   /*
-   * Check if the offset metadata length is valid
+   * Check if the offset remoteLogMetadata length is valid
    */
-  private def validateOffsetMetadataLength(metadata: String) : Boolean = {
-    metadata == null || metadata.length() <= config.maxMetadataSize
+  private def validateOffsetMetadataLength(remoteLogMetadata: String) : Boolean = {
+    remoteLogMetadata == null || remoteLogMetadata.length() <= config.maxMetadataSize
   }
 
 
@@ -1026,12 +1026,12 @@ class GroupMetadataManager(brokerId: Int,
  * version is used to evolve the messages within their data types:
  *
  * key version 0:       group consumption offset
- *    -> value version 0:       [offset, metadata, timestamp]
+ *    -> value version 0:       [offset, remoteLogMetadata, timestamp]
  *
  * key version 1:       group consumption offset
- *    -> value version 1:       [offset, metadata, commit_timestamp, expire_timestamp]
+ *    -> value version 1:       [offset, remoteLogMetadata, commit_timestamp, expire_timestamp]
  *
- * key version 2:       group metadata
+ * key version 2:       group remoteLogMetadata
  *    -> value version 0:       [protocol_type, generation, protocol, leader, members]
  */
 object GroupMetadataManager {
@@ -1055,10 +1055,10 @@ object GroupMetadataManager {
   }
 
   /**
-   * Generates the key for group metadata message for given group
+   * Generates the key for group remoteLogMetadata message for given group
    *
    * @param groupId the ID of the group to generate the key
-   * @return key bytes for group metadata message
+   * @return key bytes for group remoteLogMetadata message
    */
   def groupMetadataKey(groupId: String): Array[Byte] = {
     MessageUtil.toVersionPrefixedBytes(GroupMetadataKeyData.HIGHEST_SUPPORTED_VERSION,
@@ -1067,9 +1067,9 @@ object GroupMetadataManager {
   }
 
   /**
-   * Generates the payload for offset commit message from given offset and metadata
+   * Generates the payload for offset commit message from given offset and remoteLogMetadata
    *
-   * @param offsetAndMetadata consumer's current offset and metadata
+   * @param offsetAndMetadata consumer's current offset and remoteLogMetadata
    * @param apiVersion the api version
    * @return payload for offset commit message
    */
@@ -1081,7 +1081,7 @@ object GroupMetadataManager {
       else 3.toShort
     MessageUtil.toVersionPrefixedBytes(version, new OffsetCommitValue()
       .setOffset(offsetAndMetadata.offset)
-      .setMetadata(offsetAndMetadata.metadata)
+      .setMetadata(offsetAndMetadata.remoteLogMetadata)
       .setCommitTimestamp(offsetAndMetadata.commitTimestamp)
       .setLeaderEpoch(offsetAndMetadata.leaderEpoch.orElse(RecordBatch.NO_PARTITION_LEADER_EPOCH))
       // version 1 has a non empty expireTimestamp field
@@ -1090,10 +1090,10 @@ object GroupMetadataManager {
   }
 
   /**
-   * Generates the payload for group metadata message from given offset and metadata
+   * Generates the payload for group remoteLogMetadata message from given offset and remoteLogMetadata
    * assuming the generation id, selected protocol, leader and member assignment are all available
    *
-   * @param groupMetadata current group metadata
+   * @param groupMetadata current group remoteLogMetadata
    * @param assignment the assignment for the rebalancing generation
    * @param apiVersion the api version
    * @return payload for offset commit message
@@ -1123,8 +1123,8 @@ object GroupMetadataManager {
           .setRebalanceTimeout(memberMetadata.rebalanceTimeoutMs)
           .setGroupInstanceId(memberMetadata.groupInstanceId.orNull)
           // The group is non-empty, so the current protocol must be defined
-          .setSubscription(groupMetadata.protocolName.map(memberMetadata.metadata)
-            .getOrElse(throw new IllegalStateException("Attempted to write non-empty group metadata with no defined protocol.")))
+          .setSubscription(groupMetadata.protocolName.map(memberMetadata.remoteLogMetadata)
+            .getOrElse(throw new IllegalStateException("Attempted to write non-empty group remoteLogMetadata with no defined protocol.")))
           .setAssignment(assignment.getOrElse(memberMetadata.memberId,
             throw new IllegalStateException(s"Attempted to write member ${memberMetadata.memberId} of group ${groupMetadata.groupId} with no assignment.")))
       }.asJava))
@@ -1143,17 +1143,17 @@ object GroupMetadataManager {
       val key = new OffsetCommitKey(new ByteBufferAccessor(buffer), version)
       OffsetKey(version, GroupTopicPartition(key.group, new TopicPartition(key.topic, key.partition)))
     } else if (version >= GroupMetadataKeyData.LOWEST_SUPPORTED_VERSION && version <= GroupMetadataKeyData.HIGHEST_SUPPORTED_VERSION) {
-      // version 2 refers to group metadata
+      // version 2 refers to group remoteLogMetadata
       val key = new GroupMetadataKeyData(new ByteBufferAccessor(buffer), version)
       GroupMetadataKey(version, key.group)
-    } else throw new IllegalStateException(s"Unknown group metadata message version: $version")
+    } else throw new IllegalStateException(s"Unknown group remoteLogMetadata message version: $version")
   }
 
   /**
-   * Decodes the offset messages' payload and retrieves offset and metadata from it
+   * Decodes the offset messages' payload and retrieves offset and remoteLogMetadata from it
    *
    * @param buffer input byte-buffer
-   * @return an offset-metadata object from the message
+   * @return an offset-remoteLogMetadata object from the message
    */
   def readOffsetMessageValue(buffer: ByteBuffer): OffsetAndMetadata = {
     // tombstone
@@ -1165,7 +1165,7 @@ object GroupMetadataManager {
         OffsetAndMetadata(
           offset = value.offset,
           leaderEpoch = if (value.leaderEpoch == RecordBatch.NO_PARTITION_LEADER_EPOCH) Optional.empty() else Optional.of(value.leaderEpoch),
-          metadata = value.metadata,
+          remoteLogMetadata = value.remoteLogMetadata,
           commitTimestamp = value.commitTimestamp,
           expireTimestamp = if (value.expireTimestamp == OffsetCommitRequest.DEFAULT_TIMESTAMP) None else Some(value.expireTimestamp))
       } else throw new IllegalStateException(s"Unknown offset message version: $version")
@@ -1173,12 +1173,12 @@ object GroupMetadataManager {
   }
 
   /**
-   * Decodes the group metadata messages' payload and retrieves its member metadata from it
+   * Decodes the group remoteLogMetadata messages' payload and retrieves its member remoteLogMetadata from it
    *
    * @param groupId The ID of the group to be read
    * @param buffer input byte-buffer
    * @param time the time instance to use
-   * @return a group metadata object from the message
+   * @return a group remoteLogMetadata object from the message
    */
   def readGroupMessageValue(groupId: String, buffer: ByteBuffer, time: Time): GroupMetadata = {
     // tombstone
@@ -1209,7 +1209,7 @@ object GroupMetadataManager {
           currentStateTimestamp = if (value.currentStateTimestamp == -1) None else Some(value.currentStateTimestamp),
           members = members,
           time = time)
-      } else throw new IllegalStateException(s"Unknown group metadata message version: $version")
+      } else throw new IllegalStateException(s"Unknown group remoteLogMetadata message version: $version")
     }
   }
 
@@ -1235,11 +1235,11 @@ object GroupMetadataManager {
     }
   }
 
-  // Formatter for use with tools to read group metadata history
+  // Formatter for use with tools to read group remoteLogMetadata history
   class GroupMetadataMessageFormatter extends MessageFormatter {
     def writeTo(consumerRecord: ConsumerRecord[Array[Byte], Array[Byte]], output: PrintStream): Unit = {
       Option(consumerRecord.key).map(key => GroupMetadataManager.readMessageKey(ByteBuffer.wrap(key))).foreach {
-        // Only print if the message is a group metadata record.
+        // Only print if the message is a group remoteLogMetadata record.
         // We ignore the timestamp of the message because GroupMetadataMessage has its own timestamp.
         case groupMetadataKey: GroupMetadataKey =>
           val groupId = groupMetadataKey.key
@@ -1280,10 +1280,10 @@ object GroupMetadataManager {
     val valueString = if (offset == null) {
       "<DELETE>"
     } else {
-      if (offset.metadata.isEmpty)
+      if (offset.remoteLogMetadata.isEmpty)
         s"offset=${offset.offset}"
       else
-        s"offset=${offset.offset},metadata=${offset.metadata}"
+        s"offset=${offset.offset},remoteLogMetadata=${offset.remoteLogMetadata}"
     }
 
     (Some(keyString), Some(valueString))

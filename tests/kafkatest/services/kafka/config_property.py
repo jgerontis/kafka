@@ -41,11 +41,11 @@ LOG_RETENTION_CHECK_INTERVAL_MS = "log.retention.check.interval.ms"
 LOG_RETENTION_MS = "log.retention.ms"
 LOG_CLEANER_ENABLE = "log.cleaner.enable"
 
-METADATA_LOG_DIR = "metadata.log.dir"
-METADATA_LOG_SEGMENT_BYTES = "metadata.log.segment.bytes"
-METADATA_LOG_RETENTION_BYTES = "metadata.max.retention.bytes"
-METADATA_LOG_SEGMENT_MS = "metadata.log.segment.ms"
-METADATA_LOG_BYTES_BETWEEN_SNAPSHOTS = "metadata.log.max.record.bytes.between.snapshots"
+METADATA_LOG_DIR = "remoteLogMetadata.log.dir"
+METADATA_LOG_SEGMENT_BYTES = "remoteLogMetadata.log.segment.bytes"
+METADATA_LOG_RETENTION_BYTES = "remoteLogMetadata.max.retention.bytes"
+METADATA_LOG_SEGMENT_MS = "remoteLogMetadata.log.segment.ms"
+METADATA_LOG_BYTES_BETWEEN_SNAPSHOTS = "remoteLogMetadata.log.max.record.bytes.between.snapshots"
 
 AUTO_CREATE_TOPICS_ENABLE = "auto.create.topics.enable"
 
@@ -157,7 +157,7 @@ From KafkaConfig.scala
   val ConsumerMinSessionTimeoutMsProp = "consumer.min.session.timeout.ms"
   val ConsumerMaxSessionTimeoutMsProp = "consumer.max.session.timeout.ms"
   /** ********* Offset management configuration ***********/
-  val OffsetMetadataMaxSizeProp = "offset.metadata.max.bytes"
+  val OffsetMetadataMaxSizeProp = "offset.remoteLogMetadata.max.bytes"
   val OffsetsLoadBufferSizeProp = "offsets.load.buffer.size"
   val OffsetsTopicReplicationFactorProp = "offsets.topic.replication.factor"
   val OffsetsTopicPartitionsProp = "offsets.topic.num.partitions"

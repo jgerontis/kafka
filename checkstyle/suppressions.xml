@@ -276,7 +276,7 @@
     <suppress checks="JavaNCSS"
               files="RequestResponseTest.java"/>
 
-    <!-- metadata -->
+    <!-- remoteLogMetadata -->
     <suppress checks="ClassDataAbstractionCoupling"
               files="(QuorumControllerTest|ReplicationControlManager|ReplicationControlManagerTest).java"/>
     <suppress checks="ClassFanOutComplexity"
@@ -288,7 +288,7 @@
     <suppress checks="NPathComplexity"
               files="(ClientQuotasImage|KafkaEventQueue|ReplicationControlManager).java"/>
     <suppress checks="(NPathComplexity|ClassFanOutComplexity|CyclomaticComplexity|ClassDataAbstractionCoupling|LocalVariableName|MemberName|ParameterName|MethodLength|JavaNCSS|AvoidStarImport)"
-            files="metadata[\\/]src[\\/](generated|generated-test)[\\/].+.java$"/>
+            files="remoteLogMetadata[\\/]src[\\/](generated|generated-test)[\\/].+.java$"/>
 
     <!-- Storage -->
     <suppress checks="(CyclomaticComplexity|ParameterNumber)"

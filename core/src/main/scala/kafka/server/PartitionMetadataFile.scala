@@ -30,7 +30,7 @@ import org.apache.kafka.common.utils.Utils
 
 
 object PartitionMetadataFile {
-  private val PartitionMetadataFilename = "partition.metadata"
+  private val PartitionMetadataFilename = "partition.remoteLogMetadata"
   private val WhiteSpacesPattern = Pattern.compile(":\\s+")
   private val CurrentVersion = 0
 
@@ -63,11 +63,11 @@ object PartitionMetadataFile {
                 case _ => throw malformedLineException(line)
               }
               if (metadataTopicId.equals(Uuid.ZERO_UUID)) {
-                throw new IOException(s"Invalid topic ID in partition metadata file ($location)")
+                throw new IOException(s"Invalid topic ID in partition remoteLogMetadata file ($location)")
               }
               new PartitionMetadata(CurrentVersion, metadataTopicId)
             } else {
-              throw new IOException(s"Unrecognized version of partition metadata file ($location): " + version)
+              throw new IOException(s"Unrecognized version of partition remoteLogMetadata file ($location): " + version)
             }
           case _ => throw malformedLineException(line)
         }
@@ -126,7 +126,7 @@ class PartitionMetadataFile(val file: File,
             Utils.atomicMoveWithFallback(tempPath, path)
           } catch {
             case e: IOException =>
-              val msg = s"Error while writing to partition metadata file ${file.getAbsolutePath}"
+              val msg = s"Error while writing to partition remoteLogMetadata file ${file.getAbsolutePath}"
               logDirFailureChannel.maybeAddOfflineLogDir(logDir, msg, e)
               throw new KafkaStorageException(msg, e)
           }
@@ -148,7 +148,7 @@ class PartitionMetadataFile(val file: File,
         }
       } catch {
         case e: IOException =>
-          val msg = s"Error while reading partition metadata file ${file.getAbsolutePath}"
+          val msg = s"Error while reading partition remoteLogMetadata file ${file.getAbsolutePath}"
           logDirFailureChannel.maybeAddOfflineLogDir(logDir, msg, e)
           throw new KafkaStorageException(msg, e)
       }

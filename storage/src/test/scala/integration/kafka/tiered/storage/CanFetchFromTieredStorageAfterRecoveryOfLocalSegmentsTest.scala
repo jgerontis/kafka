@@ -25,7 +25,7 @@ package kafka.tiered.storage
  *    The purpose of this test is to exercise multiple failure scenarios on the cluster upon
  *    on a single-broker outage and loss of the first-tiered storage on one broker, that is:
  *
- *    - Loss of the remote log segment metadata on B0;
+ *    - Loss of the remote log segment remoteLogMetadata on B0;
  *    - Loss of the active log segment on B0;
  *    - Loss of availability of broker B0;
  *
@@ -33,12 +33,12 @@ package kafka.tiered.storage
  *    -----------
  *    - Remote log segments of Ta-p0 are fetched from B1 when B0 is offline.
  *    - B0 restores the availability both active and remote log segments upon restart.
- *    - This assumes the remote log metadata which were lost on B0 can be recovered.
- *      To that end, the remote log metadata topic should have a replication factor of at least two
+ *    - This assumes the remote log remoteLogMetadata which were lost on B0 can be recovered.
+ *      To that end, the remote log remoteLogMetadata topic should have a replication factor of at least two
  *      so that the lost partitions on B0 can be recovered from B1.
  */
 //
-// TODO In order to assess the last point deterministically, move all leaders of the metadata
+// TODO In order to assess the last point deterministically, move all leaders of the remoteLogMetadata
 //      topic-partitions to B0 with replication on B1.
 //
 class CanFetchFromTieredStorageAfterRecoveryOfLocalSegmentsTest extends TieredStorageTestHarness {
@@ -77,12 +77,12 @@ class CanFetchFromTieredStorageAfterRecoveryOfLocalSegmentsTest extends TieredSt
       .start(broker0)
       .expectLeader(topicA, p0, broker0, electLeader = true)
       //
-      // TODO There is a race condition here. If consumption happens "too soon" and the remote log metadata
-      //      manager has not been given enough time to update the remote log metadata, only the
+      // TODO There is a race condition here. If consumption happens "too soon" and the remote log remoteLogMetadata
+      //      manager has not been given enough time to update the remote log remoteLogMetadata, only the
       //      segments from the local storage will be found in B0. We need to mechanism to deterministically
-      //      initiate consumption once we know metadata are up-to-date in the restarted broker. Alternatively,
+      //      initiate consumption once we know remoteLogMetadata are up-to-date in the restarted broker. Alternatively,
       //      we can evaluate if a stronger consistency is wished on broker restart such that a log
-      //      is not available for consumption until the metadata for its remote segments have been processed.
+      //      is not available for consumption until the remoteLogMetadata for its remote segments have been processed.
       //
       .consume(topicA, p0, fetchOffset = 0, expectedTotalRecord = 3, expectedRecordsFromSecondTier = 2)
       .expectFetchFromTieredStorage(broker0, topicA, p0, remoteFetchRequestCount = 2)

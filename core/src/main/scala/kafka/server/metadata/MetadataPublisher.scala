@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package kafka.server.metadata
+package kafka.server.remoteLogMetadata
 
 import org.apache.kafka.image.{MetadataDelta, MetadataImage}
 
 /**
- * An object which publishes a new metadata image.
+ * An object which publishes a new remoteLogMetadata image.
  */
 trait MetadataPublisher {
   /**
-   * Publish a new metadata image.
+   * Publish a new remoteLogMetadata image.
    *
-   * @param newHighestMetadataOffset  The highest metadata offset contained within the image.
+   * @param newHighestMetadataOffset  The highest remoteLogMetadata offset contained within the image.
    * @param delta                     The delta between the old image and the new one.
    * @param newImage                  The new image, which is the result of applying the
    *                                  delta to the previous image.

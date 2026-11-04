@@ -39,7 +39,7 @@ case class FetchPartitionStatus(startOffsetMetadata: LogOffsetMetadata, fetchInf
 }
 
 /**
- * The fetch metadata maintained by the delayed fetch operation
+ * The fetch remoteLogMetadata maintained by the delayed fetch operation
  */
 case class FetchMetadata(fetchMinBytes: Int,
                          fetchMaxBytes: Int,

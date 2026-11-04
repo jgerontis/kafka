@@ -60,8 +60,8 @@ class MemberMetadataTest {
 
     val member = new MemberMetadata(memberId, groupInstanceId, clientId, clientHost, rebalanceTimeoutMs, sessionTimeoutMs,
       protocolType, protocols)
-    assertTrue(Arrays.equals(Array[Byte](0), member.metadata("range")))
-    assertTrue(Arrays.equals(Array[Byte](1), member.metadata("roundrobin")))
+    assertTrue(Arrays.equals(Array[Byte](0), member.remoteLogMetadata("range")))
+    assertTrue(Arrays.equals(Array[Byte](1), member.remoteLogMetadata("roundrobin")))
   }
 
   @Test
@@ -70,7 +70,7 @@ class MemberMetadataTest {
 
     val member = new MemberMetadata(memberId, groupInstanceId, clientId, clientHost, rebalanceTimeoutMs, sessionTimeoutMs,
       protocolType, protocols)
-    assertThrows(classOf[IllegalArgumentException], () => member.metadata("blah"))
+    assertThrows(classOf[IllegalArgumentException], () => member.remoteLogMetadata("blah"))
   }
 
   @Test

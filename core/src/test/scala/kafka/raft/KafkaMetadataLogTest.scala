@@ -113,17 +113,17 @@ final class KafkaMetadataLogTest {
   def testCreateSnapshot(): Unit = {
     val numberOfRecords = 10
     val epoch = 1
-    val snapshotId = new OffsetAndEpoch(numberOfRecords, epoch)
+    val logStartSnapshotId = new OffsetAndEpoch(numberOfRecords, epoch)
     val log = buildMetadataLog(tempDir, mockTime)
 
     append(log, numberOfRecords, epoch)
     log.updateHighWatermark(new LogOffsetMetadata(numberOfRecords))
 
-    TestUtils.resource(log.createNewSnapshot(snapshotId).get()) { snapshot =>
+    TestUtils.resource(log.createNewSnapshot(logStartSnapshotId).get()) { snapshot =>
       snapshot.freeze()
     }
 
-    assertEquals(0, log.readSnapshot(snapshotId).get().sizeInBytes())
+    assertEquals(0, log.readSnapshot(logStartSnapshotId).get().sizeInBytes())
   }
 
   @Test
@@ -182,26 +182,26 @@ final class KafkaMetadataLogTest {
   def testCreateSnapshotBeforeLogStartOffset(): Unit = {
     val numberOfRecords = 10
     val epoch = 1
-    val snapshotId = new OffsetAndEpoch(numberOfRecords-4, epoch)
+    val logStartSnapshotId = new OffsetAndEpoch(numberOfRecords-4, epoch)
     val log = buildMetadataLog(tempDir, mockTime)
 
     append(log, numberOfRecords, epoch)
     log.updateHighWatermark(new LogOffsetMetadata(numberOfRecords))
-    TestUtils.resource(log.createNewSnapshot(snapshotId).get()) { snapshot =>
+    TestUtils.resource(log.createNewSnapshot(logStartSnapshotId).get()) { snapshot =>
       snapshot.freeze()
     }
 
     // Simulate log cleanup that advances the LSO
-    log.log.maybeIncrementLogStartOffset(snapshotId.offset - 1, SegmentDeletion)
+    log.log.maybeIncrementLogStartOffset(logStartSnapshotId.offset - 1, SegmentDeletion)
 
-    assertEquals(Optional.empty(), log.createNewSnapshot(new OffsetAndEpoch(snapshotId.offset - 2, snapshotId.epoch)))
+    assertEquals(Optional.empty(), log.createNewSnapshot(new OffsetAndEpoch(logStartSnapshotId.offset - 2, logStartSnapshotId.epoch)))
   }
 
   @Test
   def testCreateSnapshotDivergingEpoch(): Unit = {
     val numberOfRecords = 10
     val epoch = 2
-    val snapshotId = new OffsetAndEpoch(numberOfRecords, epoch)
+    val logStartSnapshotId = new OffsetAndEpoch(numberOfRecords, epoch)
     val log = buildMetadataLog(tempDir, mockTime)
 
     append(log, numberOfRecords, epoch)
@@ -209,7 +209,7 @@ final class KafkaMetadataLogTest {
 
     assertThrows(
       classOf[IllegalArgumentException],
-      () => log.createNewSnapshot(new OffsetAndEpoch(snapshotId.offset, snapshotId.epoch - 1))
+      () => log.createNewSnapshot(new OffsetAndEpoch(logStartSnapshotId.offset, logStartSnapshotId.epoch - 1))
     )
   }
 
@@ -217,19 +217,19 @@ final class KafkaMetadataLogTest {
   def testCreateSnapshotOlderEpoch(): Unit = {
     val numberOfRecords = 10
     val epoch = 2
-    val snapshotId = new OffsetAndEpoch(numberOfRecords, epoch)
+    val logStartSnapshotId = new OffsetAndEpoch(numberOfRecords, epoch)
     val log = buildMetadataLog(tempDir, mockTime)
 
     append(log, numberOfRecords, epoch)
     log.updateHighWatermark(new LogOffsetMetadata(numberOfRecords))
 
-    TestUtils.resource(log.createNewSnapshot(snapshotId).get()) { snapshot =>
+    TestUtils.resource(log.createNewSnapshot(logStartSnapshotId).get()) { snapshot =>
       snapshot.freeze()
     }
 
     assertThrows(
       classOf[IllegalArgumentException],
-      () => log.createNewSnapshot(new OffsetAndEpoch(snapshotId.offset, snapshotId.epoch - 1))
+      () => log.createNewSnapshot(new OffsetAndEpoch(logStartSnapshotId.offset, logStartSnapshotId.epoch - 1))
     )
   }
 
@@ -266,17 +266,17 @@ final class KafkaMetadataLogTest {
   def testCreateExistingSnapshot(): Unit = {
     val numberOfRecords = 10
     val epoch = 1
-    val snapshotId = new OffsetAndEpoch(numberOfRecords - 1, epoch)
+    val logStartSnapshotId = new OffsetAndEpoch(numberOfRecords - 1, epoch)
     val log = buildMetadataLog(tempDir, mockTime)
 
     append(log, numberOfRecords, epoch)
     log.updateHighWatermark(new LogOffsetMetadata(numberOfRecords))
 
-    TestUtils.resource(log.createNewSnapshot(snapshotId).get()) { snapshot =>
+    TestUtils.resource(log.createNewSnapshot(logStartSnapshotId).get()) { snapshot =>
       snapshot.freeze()
     }
 
-    assertEquals(Optional.empty(), log.createNewSnapshot(snapshotId),
+    assertEquals(Optional.empty(), log.createNewSnapshot(logStartSnapshotId),
       "Creating an existing snapshot should not do anything")
   }
 
@@ -386,7 +386,7 @@ final class KafkaMetadataLogTest {
       .map[Optional[SnapshotPath]](Snapshots.parse)
       .filter(_.isPresent)
       .forEach { path =>
-        assertFalse(path.get.snapshotId.offset < log.startOffset)
+        assertFalse(path.get.logStartSnapshotId.offset < log.startOffset)
       }
   }
 
@@ -420,10 +420,10 @@ final class KafkaMetadataLogTest {
     val (logDir, log, config) = buildMetadataLogAndDir(tempDir, mockTime)
     val numberOfRecords = 10
     val epoch = 1
-    val snapshotId = new OffsetAndEpoch(1, epoch)
+    val logStartSnapshotId = new OffsetAndEpoch(1, epoch)
 
     append(log, numberOfRecords, epoch)
-    TestUtils.resource(log.storeSnapshot(snapshotId).get()) { snapshot =>
+    TestUtils.resource(log.storeSnapshot(logStartSnapshotId).get()) { snapshot =>
       snapshot.freeze()
     }
 
@@ -436,7 +436,7 @@ final class KafkaMetadataLogTest {
 
     val secondLog = buildMetadataLog(tempDir, mockTime)
 
-    assertEquals(snapshotId, secondLog.latestSnapshotId().get)
+    assertEquals(logStartSnapshotId, secondLog.latestSnapshotId().get)
     assertEquals(0, log.startOffset)
     assertEquals(epoch, log.lastFetchedEpoch)
     assertEquals(numberOfRecords, log.endOffset().offset)
@@ -497,7 +497,7 @@ final class KafkaMetadataLogTest {
       .map[Optional[SnapshotPath]](Snapshots.parse)
       .filter(_.isPresent)
       .forEach { path =>
-        assertFalse(path.get.snapshotId.offset < log.startOffset)
+        assertFalse(path.get.logStartSnapshotId.offset < log.startOffset)
       }
   }
 
@@ -506,10 +506,10 @@ final class KafkaMetadataLogTest {
     val log = buildMetadataLog(tempDir, mockTime)
     val numberOfRecords = 10
     val epoch = 1
-    val snapshotId = new OffsetAndEpoch(numberOfRecords + 1, epoch + 1)
+    val logStartSnapshotId = new OffsetAndEpoch(numberOfRecords + 1, epoch + 1)
 
     append(log, numberOfRecords, epoch)
-    TestUtils.resource(log.storeSnapshot(snapshotId).get()) { snapshot =>
+    TestUtils.resource(log.storeSnapshot(logStartSnapshotId).get()) { snapshot =>
       snapshot.freeze()
     }
 
@@ -517,11 +517,11 @@ final class KafkaMetadataLogTest {
 
     val secondLog = buildMetadataLog(tempDir, mockTime)
 
-    assertEquals(snapshotId, secondLog.latestSnapshotId().get)
-    assertEquals(snapshotId.offset, secondLog.startOffset)
-    assertEquals(snapshotId.epoch, secondLog.lastFetchedEpoch)
-    assertEquals(snapshotId.offset, secondLog.endOffset().offset)
-    assertEquals(snapshotId.offset, secondLog.highWatermark.offset)
+    assertEquals(logStartSnapshotId, secondLog.latestSnapshotId().get)
+    assertEquals(logStartSnapshotId.offset, secondLog.startOffset)
+    assertEquals(logStartSnapshotId.epoch, secondLog.lastFetchedEpoch)
+    assertEquals(logStartSnapshotId.offset, secondLog.endOffset().offset)
+    assertEquals(logStartSnapshotId.offset, secondLog.highWatermark.offset)
   }
 
   @Test
@@ -607,14 +607,14 @@ final class KafkaMetadataLogTest {
     append(log, numberOfRecords, epoch)
     log.updateHighWatermark(new LogOffsetMetadata(numberOfRecords))
 
-    val snapshotId = new OffsetAndEpoch(numberOfRecords, epoch)
-    TestUtils.resource(log.createNewSnapshot(snapshotId).get()) { snapshot =>
+    val logStartSnapshotId = new OffsetAndEpoch(numberOfRecords, epoch)
+    TestUtils.resource(log.createNewSnapshot(logStartSnapshotId).get()) { snapshot =>
       snapshot.freeze()
     }
 
     val resultOffsetAndEpoch = log.validateOffsetAndEpoch(numberOfRecords, epoch - 1)
     assertEquals(ValidOffsetAndEpoch.Kind.SNAPSHOT, resultOffsetAndEpoch.kind)
-    assertEquals(snapshotId, resultOffsetAndEpoch.offsetAndEpoch())
+    assertEquals(logStartSnapshotId, resultOffsetAndEpoch.offsetAndEpoch())
   }
 
   @Test
@@ -627,8 +627,8 @@ final class KafkaMetadataLogTest {
     append(log, offset, epoch)
     log.updateHighWatermark(new LogOffsetMetadata(offset))
 
-    val snapshotId = new OffsetAndEpoch(offset, epoch)
-    TestUtils.resource(log.createNewSnapshot(snapshotId).get()) { snapshot =>
+    val logStartSnapshotId = new OffsetAndEpoch(offset, epoch)
+    TestUtils.resource(log.createNewSnapshot(logStartSnapshotId).get()) { snapshot =>
       snapshot.freeze()
     }
     // Simulate log cleaning advancing the LSO
@@ -636,7 +636,7 @@ final class KafkaMetadataLogTest {
 
     val resultOffsetAndEpoch = log.validateOffsetAndEpoch(offset - 1, epoch)
     assertEquals(ValidOffsetAndEpoch.Kind.SNAPSHOT, resultOffsetAndEpoch.kind)
-    assertEquals(snapshotId, resultOffsetAndEpoch.offsetAndEpoch())
+    assertEquals(logStartSnapshotId, resultOffsetAndEpoch.offsetAndEpoch())
   }
 
   @Test
@@ -649,14 +649,14 @@ final class KafkaMetadataLogTest {
     append(log, offset, epoch)
     log.updateHighWatermark(new LogOffsetMetadata(offset))
 
-    val snapshotId = new OffsetAndEpoch(offset, epoch)
-    TestUtils.resource(log.createNewSnapshot(snapshotId).get()) { snapshot =>
+    val logStartSnapshotId = new OffsetAndEpoch(offset, epoch)
+    TestUtils.resource(log.createNewSnapshot(logStartSnapshotId).get()) { snapshot =>
       snapshot.freeze()
     }
 
     val resultOffsetAndEpoch = log.validateOffsetAndEpoch(offset, epoch)
     assertEquals(ValidOffsetAndEpoch.Kind.VALID, resultOffsetAndEpoch.kind)
-    assertEquals(snapshotId, resultOffsetAndEpoch.offsetAndEpoch())
+    assertEquals(logStartSnapshotId, resultOffsetAndEpoch.offsetAndEpoch())
   }
 
   @Test
@@ -666,8 +666,8 @@ final class KafkaMetadataLogTest {
 
     val log = buildMetadataLog(tempDir, mockTime)
     log.updateHighWatermark(new LogOffsetMetadata(offset))
-    val snapshotId = new OffsetAndEpoch(offset, 1)
-    TestUtils.resource(log.storeSnapshot(snapshotId).get()) { snapshot =>
+    val logStartSnapshotId = new OffsetAndEpoch(offset, 1)
+    TestUtils.resource(log.storeSnapshot(logStartSnapshotId).get()) { snapshot =>
       snapshot.freeze()
     }
     log.truncateToLatestSnapshot()
@@ -690,8 +690,8 @@ final class KafkaMetadataLogTest {
 
     val log = buildMetadataLog(tempDir, mockTime)
     log.updateHighWatermark(new LogOffsetMetadata(offset))
-    val snapshotId = new OffsetAndEpoch(offset, 1)
-    TestUtils.resource(log.storeSnapshot(snapshotId).get()) { snapshot =>
+    val logStartSnapshotId = new OffsetAndEpoch(offset, 1)
+    TestUtils.resource(log.storeSnapshot(logStartSnapshotId).get()) { snapshot =>
       snapshot.freeze()
     }
     log.truncateToLatestSnapshot()
@@ -701,7 +701,7 @@ final class KafkaMetadataLogTest {
     // offset is not equal to oldest snapshot's offset
     val resultOffsetAndEpoch = log.validateOffsetAndEpoch(100, 2)
     assertEquals(ValidOffsetAndEpoch.Kind.DIVERGING, resultOffsetAndEpoch.kind)
-    assertEquals(snapshotId, resultOffsetAndEpoch.offsetAndEpoch())
+    assertEquals(logStartSnapshotId, resultOffsetAndEpoch.offsetAndEpoch())
   }
 
   @Test
@@ -810,8 +810,8 @@ final class KafkaMetadataLogTest {
     log.updateHighWatermark(new LogOffsetMetadata(1001))
 
     for(offset <- Seq(100, 200, 300, 400, 500, 600)) {
-      val snapshotId = new OffsetAndEpoch(offset, 1)
-      TestUtils.resource(log.storeSnapshot(snapshotId).get()) { snapshot =>
+      val logStartSnapshotId = new OffsetAndEpoch(offset, 1)
+      TestUtils.resource(log.storeSnapshot(logStartSnapshotId).get()) { snapshot =>
         append(snapshot, 10)
         snapshot.freeze()
       }
@@ -820,8 +820,8 @@ final class KafkaMetadataLogTest {
     assertEquals(6, log.snapshotCount())
     assertTrue(log.maybeClean())
     assertEquals(1, log.snapshotCount(), "Expected only one snapshot after cleaning")
-    assertOptional(log.latestSnapshotId(), (snapshotId: OffsetAndEpoch) => {
-      assertEquals(600, snapshotId.offset)
+    assertOptional(log.latestSnapshotId(), (logStartSnapshotId: OffsetAndEpoch) => {
+      assertEquals(600, logStartSnapshotId.offset)
     })
     assertEquals(log.startOffset, 600)
   }
@@ -861,9 +861,9 @@ final class KafkaMetadataLogTest {
     // Cleaning should occur, but resulting size will not be under retention limit since we have to keep one snapshot
     assertTrue(log.maybeClean())
     assertEquals(1, log.snapshotCount(), "Expected one snapshot after cleaning")
-    assertOptional(log.latestSnapshotId(), (snapshotId: OffsetAndEpoch) => {
-      assertEquals(2000, snapshotId.offset, "Unexpected offset for latest snapshot")
-      assertOptional(log.readSnapshot(snapshotId), (reader: RawSnapshotReader) => {
+    assertOptional(log.latestSnapshotId(), (logStartSnapshotId: OffsetAndEpoch) => {
+      assertEquals(2000, logStartSnapshotId.offset, "Unexpected offset for latest snapshot")
+      assertOptional(log.readSnapshot(logStartSnapshotId), (reader: RawSnapshotReader) => {
         assertTrue(reader.sizeInBytes() + log.log.size > config.retentionMaxBytes)
       })
     })

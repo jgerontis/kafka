@@ -459,7 +459,7 @@ class DynamicBrokerReconfigurationTest extends ZooKeeperTestHarness with SaslSet
 
     // Update internal keystore/truststore and validate new client connections from broker (e.g. controller).
     // Alter internal keystore from `sslProperties1` to `sslProperties2`, force disconnect of a controller connection
-    // and verify that metadata is propagated for new topic.
+    // and verify that remoteLogMetadata is propagated for new topic.
     val props2 = securityProps(sslProperties2, KEYSTORE_PROPS, prefix)
     props2 ++= securityProps(combinedStoreProps, TRUSTSTORE_PROPS, prefix)
     TestUtils.incrementalAlterConfigs(servers, adminClients.head, props2, perBrokerConfig = true).all.get(15, TimeUnit.SECONDS)
@@ -1078,7 +1078,7 @@ class DynamicBrokerReconfigurationTest extends ZooKeeperTestHarness with SaslSet
     verifyRemoveListener("SASL_PLAINTEXT", SecurityProtocol.SASL_PLAINTEXT, Seq("GSSAPI"))
 
     // Verify that a listener added to a subset of servers doesn't cause any issues
-    // when metadata is processed by the client.
+    // when remoteLogMetadata is processed by the client.
     addListener(servers.tail, "SCRAM_LISTENER", SecurityProtocol.SASL_PLAINTEXT, Seq("SCRAM-SHA-256"))
     val bootstrap = TestUtils.bootstrapServers(servers.tail, new ListenerName("SCRAM_LISTENER"))
     val producer = ProducerBuilder().bootstrapServers(bootstrap)
@@ -1221,7 +1221,7 @@ class DynamicBrokerReconfigurationTest extends ZooKeeperTestHarness with SaslSet
 
   private def verifyListener(securityProtocol: SecurityProtocol, saslMechanism: Option[String], groupId: String): Unit = {
     val mechanism = saslMechanism.getOrElse("")
-    val retries = 1000 // since it may take time for metadata to be updated on all brokers
+    val retries = 1000 // since it may take time for remoteLogMetadata to be updated on all brokers
     val producer = ProducerBuilder().listenerName(securityProtocol.name)
       .securityProtocol(securityProtocol)
       .saslMechanism(mechanism)

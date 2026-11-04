@@ -414,13 +414,13 @@ HttpClient http = ...;
 // Get the word count for word (aka key) &#39;alice&#39;: Approach 1
 //
 // We first find the one app instance that manages the count for &#39;alice&#39; in its local state stores.
-StreamsMetadata metadata = streams.metadataForKey(&quot;word-count&quot;, &quot;alice&quot;, Serdes.String().serializer());
+StreamsMetadata remoteLogMetadata = streams.metadataForKey(&quot;word-count&quot;, &quot;alice&quot;, Serdes.String().serializer());
 // Then, we query only that single app instance for the latest count of &#39;alice&#39;.
 // Note: The RPC URL shown below is fictitious and only serves to illustrate the idea.  Ultimately,
 // the URL (or, in general, the method of communication) will depend on the RPC layer you opted to
 // implement.  Again, we provide end-to-end demo applications (such as KafkaMusicExample) that showcase
 // how to implement such an RPC layer.
-Long result = http.getLong(&quot;http://&quot; + metadata.host() + &quot;:&quot; + metadata.port() + &quot;/word-count/alice&quot;);
+Long result = http.getLong(&quot;http://&quot; + remoteLogMetadata.host() + &quot;:&quot; + remoteLogMetadata.port() + &quot;/word-count/alice&quot;);
 
 // Get the word count for word (aka key) &#39;alice&#39;: Approach 2
 //

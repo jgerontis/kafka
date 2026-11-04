@@ -108,7 +108,7 @@ class DynamicConfigChangeTest extends KafkaServerTestHarness {
     createTopic(tp.topic, 1, 1, logProps)
     val server = servers.head
     TestUtils.waitUntilTrue(() => server.logManager.getLog(tp).isDefined,
-      "Topic metadata propagation failed")
+      "Topic remoteLogMetadata propagation failed")
     val log = server.logManager.getLog(tp).get
     // message format version should always be 3.0 if inter-broker protocol is 3.0 or higher
     assertEquals(KAFKA_3_0_IV1, log.config.messageFormatVersion)

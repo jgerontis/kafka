@@ -598,12 +598,12 @@ sealed abstract class AsyncResponse {
       throw KeeperException.create(resultCode, path)
   }
 
-  def metadata: ResponseMetadata
+  def remoteLogMetadata: ResponseMetadata
 }
 
 sealed trait GetChildrenResponseNoStat extends AsyncResponse {
   def children: Seq[String]
-  def metadata: ResponseMetadata
+  def remoteLogMetadata: ResponseMetadata
 }
 
 case class ResponseMetadata(sendTimeMs: Long, receivedTimeMs: Long) {
@@ -611,25 +611,25 @@ case class ResponseMetadata(sendTimeMs: Long, receivedTimeMs: Long) {
 }
 
 case class CreateResponse(resultCode: Code, path: String, ctx: Option[Any], name: String,
-                          metadata: ResponseMetadata) extends AsyncResponse
+                          remoteLogMetadata: ResponseMetadata) extends AsyncResponse
 case class DeleteResponse(resultCode: Code, path: String, ctx: Option[Any],
-                          metadata: ResponseMetadata) extends AsyncResponse
+                          remoteLogMetadata: ResponseMetadata) extends AsyncResponse
 case class ExistsResponse(resultCode: Code, path: String, ctx: Option[Any], stat: Stat,
-                          metadata: ResponseMetadata) extends AsyncResponse
+                          remoteLogMetadata: ResponseMetadata) extends AsyncResponse
 case class GetDataResponse(resultCode: Code, path: String, ctx: Option[Any], data: Array[Byte], stat: Stat,
-                           metadata: ResponseMetadata) extends AsyncResponse
+                           remoteLogMetadata: ResponseMetadata) extends AsyncResponse
 case class SetDataResponse(resultCode: Code, path: String, ctx: Option[Any], stat: Stat,
-                           metadata: ResponseMetadata) extends AsyncResponse
+                           remoteLogMetadata: ResponseMetadata) extends AsyncResponse
 case class GetAclResponse(resultCode: Code, path: String, ctx: Option[Any], acl: Seq[ACL], stat: Stat,
-                          metadata: ResponseMetadata) extends AsyncResponse
+                          remoteLogMetadata: ResponseMetadata) extends AsyncResponse
 case class SetAclResponse(resultCode: Code, path: String, ctx: Option[Any], stat: Stat,
-                          metadata: ResponseMetadata) extends AsyncResponse
+                          remoteLogMetadata: ResponseMetadata) extends AsyncResponse
 case class GetChildrenResponse(resultCode: Code, path: String, ctx: Option[Any], children: Seq[String], stat: Stat,
-                               metadata: ResponseMetadata) extends GetChildrenResponseNoStat
+                               remoteLogMetadata: ResponseMetadata) extends GetChildrenResponseNoStat
 case class GetChildrenPaginatedResponse(resultCode: Code, path: String, ctx: Option[Any], children: Seq[String],
-                                        metadata: ResponseMetadata) extends GetChildrenResponseNoStat
+                                        remoteLogMetadata: ResponseMetadata) extends GetChildrenResponseNoStat
 case class MultiResponse(resultCode: Code, path: String, ctx: Option[Any], zkOpResults: Seq[ZkOpResult],
-                         metadata: ResponseMetadata) extends AsyncResponse
+                         remoteLogMetadata: ResponseMetadata) extends AsyncResponse
 
 class ZooKeeperClientException(message: String) extends RuntimeException(message)
 class ZooKeeperClientExpiredException(message: String) extends ZooKeeperClientException(message)

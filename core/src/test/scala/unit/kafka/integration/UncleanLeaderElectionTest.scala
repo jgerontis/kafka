@@ -254,7 +254,7 @@ class UncleanLeaderElectionTest extends ZooKeeperTestHarness {
     TestUtils.waitUntilTrue(() => {
       val partitionInfoOpt = followerServer.metadataCache.getPartitionInfo(topic, partitionId)
       partitionInfoOpt.isDefined && partitionInfoOpt.get.isr.contains(followerId)
-    }, "Inconsistent metadata after first server startup")
+    }, "Inconsistent remoteLogMetadata after first server startup")
 
     servers.filter(server => server.config.brokerId == leaderId).foreach(server => shutdownServer(server))
     // verify clean leader transition to ISR follower

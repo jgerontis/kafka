@@ -30,7 +30,7 @@ import scala.collection.mutable.ListBuffer
 private[log] case class TxnIndexSearchResult(abortedTransactions: List[AbortedTxn], isComplete: Boolean)
 
 /**
- * The transaction index maintains metadata about the aborted transactions for each segment. This includes
+ * The transaction index maintains remoteLogMetadata about the aborted transactions for each segment. This includes
  * the start and end offsets for the aborted transactions and the last stable offset (LSO) at the time of
  * the abort. This index is used to find the aborted transactions in the range of a given fetch request at
  * the READ_COMMITTED isolation level.

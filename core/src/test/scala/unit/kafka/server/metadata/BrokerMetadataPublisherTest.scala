@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package unit.kafka.server.metadata
+package unit.kafka.server.remoteLogMetadata
 
 import kafka.log.Log
-import kafka.server.metadata.BrokerMetadataPublisher
+import kafka.server.remoteLogMetadata.BrokerMetadataPublisher
 import org.apache.kafka.common.{TopicPartition, Uuid}
 import org.apache.kafka.image.{MetadataImageTest, TopicImage, TopicsImage}
-import org.apache.kafka.metadata.PartitionRegistration
+import org.apache.kafka.remoteLogMetadata.PartitionRegistration
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 

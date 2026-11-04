@@ -60,14 +60,14 @@ class KafkaService(KafkaPathResolverMixin, JmxMixin, Service):
     Metadata Quorums
     ----------------
     Kafka can use either ZooKeeper or a KRaft Controller quorum for its
-    metadata.  See the kafkatest.services.kafka.quorum.ServiceQuorumInfo
+    remoteLogMetadata.  See the kafkatest.services.kafka.quorum.ServiceQuorumInfo
     class for details.
 
     Attributes
     ----------
 
     quorum_info : kafkatest.services.kafka.quorum.ServiceQuorumInfo
-        Information about the service and it's metadata quorum
+        Information about the service and it's remoteLogMetadata quorum
     num_nodes_broker_role : int
         The number of nodes in the service that include 'broker'
         in process.roles (0 when using Zookeeper)
@@ -154,7 +154,7 @@ class KafkaService(KafkaPathResolverMixin, JmxMixin, Service):
     DATA_LOG_DIR_1 = "%s-1" % (DATA_LOG_DIR_PREFIX)
     DATA_LOG_DIR_2 = "%s-2" % (DATA_LOG_DIR_PREFIX)
     CONFIG_FILE = os.path.join(PERSISTENT_ROOT, "kafka.properties")
-    METADATA_LOG_DIR = os.path.join (PERSISTENT_ROOT, "kafka-metadata-logs")
+    METADATA_LOG_DIR = os.path.join (PERSISTENT_ROOT, "kafka-remoteLogMetadata-logs")
     METADATA_SNAPSHOT_SEARCH_STR = "%s/__cluster_metadata-0/*.checkpoint" % METADATA_LOG_DIR
     METADATA_FIRST_LOG = "%s/__cluster_metadata-0/00000000000000000000.log" % METADATA_LOG_DIR
     # Kafka Authorizer

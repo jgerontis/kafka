@@ -45,7 +45,7 @@ trait KafkaMetricsReporterMBean {
 }
 
 /**
-  * Implement {@link org.apache.kafka.common.ClusterResourceListener} to receive cluster metadata once it's available. Please see the class documentation for ClusterResourceListener for more information.
+  * Implement {@link org.apache.kafka.common.ClusterResourceListener} to receive cluster remoteLogMetadata once it's available. Please see the class documentation for ClusterResourceListener for more information.
   */
 trait KafkaMetricsReporter {
   def init(props: VerifiableProperties): Unit

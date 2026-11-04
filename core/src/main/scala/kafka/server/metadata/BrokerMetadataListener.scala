@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package kafka.server.metadata
+package kafka.server.remoteLogMetadata
 
 import java.util
 import java.util.concurrent.{CompletableFuture, TimeUnit}
@@ -56,32 +56,32 @@ class BrokerMetadataListener(
   private val metadataBatchSizeHist = newHistogram(BrokerMetadataListener.MetadataBatchSizes)
 
   /**
-   * The highest metadata offset that we've seen.  Written only from the event queue thread.
+   * The highest remoteLogMetadata offset that we've seen.  Written only from the event queue thread.
    */
   @volatile var _highestMetadataOffset = -1L
 
   /**
-   * The highest metadata log epoch that we've seen. Written only from the event queue thread.
+   * The highest remoteLogMetadata log epoch that we've seen. Written only from the event queue thread.
    */
   private var _highestEpoch = -1
 
   /**
-   * The highest metadata log time that we've seen. Written only from the event queue thread.
+   * The highest remoteLogMetadata log time that we've seen. Written only from the event queue thread.
    */
   private var _highestTimestamp = -1L
 
   /**
-   * The current broker metadata image. Accessed only from the event queue thread.
+   * The current broker remoteLogMetadata image. Accessed only from the event queue thread.
    */
   private var _image = MetadataImage.EMPTY
 
   /**
-   * The current metadata delta. Accessed only from the event queue thread.
+   * The current remoteLogMetadata delta. Accessed only from the event queue thread.
    */
   private var _delta = new MetadataDelta(_image)
 
   /**
-   * The object to use to publish new metadata changes, or None if this listener has not
+   * The object to use to publish new remoteLogMetadata changes, or None if this listener has not
    * been activated yet. Accessed only from the event queue thread.
    */
   private var _publisher: Option[MetadataPublisher] = None
@@ -99,12 +99,12 @@ class BrokerMetadataListener(
   val eventQueue = new KafkaEventQueue(time, logContext, threadNamePrefix.getOrElse(""))
 
   /**
-   * Returns the highest metadata-offset. Thread-safe.
+   * Returns the highest remoteLogMetadata-offset. Thread-safe.
    */
   def highestMetadataOffset(): Long = _highestMetadataOffset
 
   /**
-   * Handle new metadata records.
+   * Handle new remoteLogMetadata records.
    */
   override def handleCommit(reader: BatchReader[ApiMessageAndVersion]): Unit =
     eventQueue.append(new HandleCommitsEvent(reader))
@@ -142,7 +142,7 @@ class BrokerMetadataListener(
   }
 
   /**
-   * Handle metadata snapshots
+   * Handle remoteLogMetadata snapshots
    */
   override def handleSnapshot(reader: SnapshotReader[ApiMessageAndVersion]): Unit =
     eventQueue.append(new HandleSnapshotEvent(reader))
@@ -151,11 +151,11 @@ class BrokerMetadataListener(
     extends EventQueue.FailureLoggingEvent(log) {
     override def run(): Unit = {
       val results = try {
-        info(s"Loading snapshot ${reader.snapshotId().offset}-${reader.snapshotId().epoch}.")
+        info(s"Loading snapshot ${reader.logStartSnapshotId().offset}-${reader.logStartSnapshotId().epoch}.")
         _delta = new MetadataDelta(_image) // Discard any previous deltas.
         val loadResults = loadBatches(_delta, reader)
         _delta.finishSnapshot()
-        info(s"Loaded snapshot ${reader.snapshotId().offset}-${reader.snapshotId().epoch}: " +
+        info(s"Loaded snapshot ${reader.logStartSnapshotId().offset}-${reader.logStartSnapshotId().epoch}: " +
           s"${loadResults}")
         loadResults
       } finally {
@@ -225,7 +225,7 @@ class BrokerMetadataListener(
 
     override def run(): Unit = {
       _publisher = Some(publisher)
-      log.info(s"Starting to publish metadata events at offset ${_highestMetadataOffset}.")
+      log.info(s"Starting to publish remoteLogMetadata events at offset ${_highestMetadataOffset}.")
       try {
         publish(publisher, _highestMetadataOffset)
         future.complete(null)

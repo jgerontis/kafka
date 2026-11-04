@@ -44,7 +44,7 @@ class ReassignReplicaExpandTest extends TieredStorageTestHarness {
       .expectSegmentToBeOffloaded(broker0, topicB, p0, baseOffset = 0, ("k1", "v1"))
       .expectSegmentToBeOffloaded(broker0, topicB, p0, baseOffset = 1, ("k2", "v2"))
       .expectEarliestOffsetInLogDirectory(topicB, p0, earliestOffset = 2)
-      // expand the topicB RF=2, the newly created replica gets mapped to one of the metadata partition which is being
+      // expand the topicB RF=2, the newly created replica gets mapped to one of the remoteLogMetadata partition which is being
       // actively consumed by both the brokers.
       .reassignReplica(topicB, p0, replicaIds = Seq(broker0, broker1))
       .expectLeader(topicB, p0, broker1, electLeader = true)

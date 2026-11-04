@@ -22,8 +22,8 @@ import kafka.utils.BrokerLocalStorage
 import kafka.utils.TestUtils
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.config.TopicConfig
-import org.apache.kafka.metadata.BrokerState
-import org.apache.kafka.server.log.remote.metadata.storage.{TopicBasedRemoteLogMetadataManager, TopicBasedRemoteLogMetadataManagerConfig}
+import org.apache.kafka.remoteLogMetadata.BrokerState
+import org.apache.kafka.server.log.remote.remoteLogMetadata.storage.{TopicBasedRemoteLogMetadataManager, TopicBasedRemoteLogMetadataManagerConfig}
 import org.apache.kafka.server.log.remote.storage.LocalTieredStorage.{STORAGE_CONFIG_PREFIX, STORAGE_DIR_PROP}
 import org.apache.kafka.server.log.remote.storage.RemoteLogManagerConfig.{REMOTE_LOG_METADATA_MANAGER_CONFIG_PREFIX_PROP, REMOTE_STORAGE_MANAGER_CONFIG_PREFIX_PROP}
 import org.apache.kafka.server.log.remote.storage.{LocalTieredStorage, RemoteLogManagerConfig}
@@ -70,8 +70,8 @@ class TransactionsTestWithTieredStore extends TransactionsTest {
     // Configure the tiered storage in Kafka. Set an interval of 100 ms for the remote log manager background
     // activity to ensure the tiered storage has enough room to be exercised within the lifetime of a test.
     //
-    // The replication factor of the remote log metadata topic needs to be chosen so that in resiliency
-    // tests, metadata can survive the loss of one replica for its topic-partitions.
+    // The replication factor of the remote log remoteLogMetadata topic needs to be chosen so that in resiliency
+    // tests, remoteLogMetadata can survive the loss of one replica for its topic-partitions.
     //
     // The second-tier storage system is mocked via the LocalTieredStorage instance which persists transferred
     // data files on the local file system.

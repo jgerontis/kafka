@@ -250,7 +250,7 @@ class GroupMetadataManagerTest {
 
     groupMetadataManager.loadGroupsAndOffsets(groupMetadataTopicPartition, groupEpoch, _ => (), 0L)
 
-    // Since there are no committed offsets for the group, and there is no other group metadata, we don't expect the
+    // Since there are no committed offsets for the group, and there is no other group remoteLogMetadata, we don't expect the
     // group to be loaded.
     assertEquals(None, groupMetadataManager.getGroup(groupId))
   }
@@ -1045,7 +1045,7 @@ class GroupMetadataManagerTest {
 
     val e = assertThrows(classOf[IllegalStateException],
       () => GroupMetadataManager.readGroupMessageValue(groupId, groupMetadataRecordValue, time))
-    assertEquals(s"Unknown group metadata message version: $unsupportedVersion", e.getMessage)
+    assertEquals(s"Unknown group remoteLogMetadata message version: $unsupportedVersion", e.getMessage)
   }
 
   @Test
@@ -1631,7 +1631,7 @@ class GroupMetadataManagerTest {
     groupMetadataManager.addGroup(group)
     group.generationId = 5
 
-    // expect the group metadata tombstone
+    // expect the group remoteLogMetadata tombstone
     EasyMock.reset(partition)
     val recordsCapture: Capture[MemoryRecords] = EasyMock.newCapture()
 
@@ -1679,7 +1679,7 @@ class GroupMetadataManagerTest {
     groupMetadataManager.addGroup(group)
     group.generationId = 5
 
-    // expect the group metadata tombstone
+    // expect the group remoteLogMetadata tombstone
     EasyMock.reset(partition)
     val recordsCapture: Capture[MemoryRecords] = EasyMock.newCapture()
 
@@ -2248,7 +2248,7 @@ class GroupMetadataManagerTest {
     val offsetAndMetadata = OffsetAndMetadata(
       offset = 537L,
       leaderEpoch = Optional.of(15),
-      metadata = "metadata",
+      remoteLogMetadata = "remoteLogMetadata",
       commitTimestamp = time.milliseconds(),
       expireTimestamp = None)
 
@@ -2260,7 +2260,7 @@ class GroupMetadataManagerTest {
 
       val deserializedOffsetAndMetadata = GroupMetadataManager.readOffsetMessageValue(buffer)
       assertEquals(offsetAndMetadata.offset, deserializedOffsetAndMetadata.offset)
-      assertEquals(offsetAndMetadata.metadata, deserializedOffsetAndMetadata.metadata)
+      assertEquals(offsetAndMetadata.remoteLogMetadata, deserializedOffsetAndMetadata.remoteLogMetadata)
       assertEquals(offsetAndMetadata.commitTimestamp, deserializedOffsetAndMetadata.commitTimestamp)
 
       // Serialization drops the leader epoch silently if an older inter-broker protocol is in use
@@ -2290,7 +2290,7 @@ class GroupMetadataManagerTest {
     val offsetAndMetadata = OffsetAndMetadata(
       offset = 537L,
       leaderEpoch = Optional.empty(),
-      metadata = "metadata",
+      remoteLogMetadata = "remoteLogMetadata",
       commitTimestamp = time.milliseconds(),
       expireTimestamp = Some(time.milliseconds() + 1000))
 
@@ -2312,7 +2312,7 @@ class GroupMetadataManagerTest {
     val offsetAndMetadata = OffsetAndMetadata(
       offset = 537L,
       leaderEpoch = Optional.empty(),
-      metadata = "metadata",
+      remoteLogMetadata = "remoteLogMetadata",
       commitTimestamp = time.milliseconds(),
       expireTimestamp = None)
 

@@ -14,7 +14,7 @@ patch-process/*
 .idea
 .svn
 .classpath
-/.metadata
+/.remoteLogMetadata
 /.recommenders
 *~
 *#

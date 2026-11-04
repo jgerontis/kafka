@@ -110,9 +110,9 @@ object TransactionLog {
   }
 
   /**
-    * Decodes the transaction log messages' payload and retrieves the transaction metadata from it
+    * Decodes the transaction log messages' payload and retrieves the transaction remoteLogMetadata from it
     *
-    * @return a transaction metadata object from the message
+    * @return a transaction remoteLogMetadata object from the message
     */
   def readTxnRecordValue(transactionalId: String, buffer: ByteBuffer): Option[TransactionMetadata] = {
     // tombstone

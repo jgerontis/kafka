@@ -140,8 +140,8 @@ object ReplicaVerificationTool extends Logging {
     val maxWaitMs = options.valueOf(maxWaitMsOpt).intValue
     val initialOffsetTime = options.valueOf(initialOffsetTimeOpt).longValue
     val reportInterval = options.valueOf(reportIntervalOpt).longValue
-    // getting topic metadata
-    info("Getting topic metadata...")
+    // getting topic remoteLogMetadata
+    info("Getting topic remoteLogMetadata...")
     val brokerList = options.valueOf(brokerListOpt)
     ToolsUtils.validatePortOrDie(parser, brokerList)
 

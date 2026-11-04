@@ -30,7 +30,7 @@ import kafka.network.{LiCombinedControlRequestBreakdownMetrics, RequestChannel}
 import kafka.server.QuotaFactory.{QuotaManagers, UnboundedQuota}
 import kafka.server.instrumentation.ProduceRequestInstrumentation.Stage
 import kafka.server.instrumentation.{ProduceRequestInstrumentation, ProduceRequestInstrumentationLogger}
-import kafka.server.metadata.ConfigRepository
+import kafka.server.remoteLogMetadata.ConfigRepository
 import kafka.utils.Implicits._
 import kafka.utils.{CoreUtils, LiDecomposedControlRequestUtils, Logging}
 import org.apache.kafka.clients.admin.AlterConfigOp.OpType
@@ -76,7 +76,7 @@ import org.apache.kafka.common.security.token.delegation.{DelegationToken, Token
 import org.apache.kafka.common.utils.{LiCombinedControlTransformer, ProducerIdAndEpoch, Time}
 import org.apache.kafka.common.{Node, TopicPartition, Uuid}
 import org.apache.kafka.server.authorizer._
-import org.apache.kafka.server.log.remote.metadata.storage.TopicBasedRemoteLogMetadataManagerConfig
+import org.apache.kafka.server.log.remote.remoteLogMetadata.storage.TopicBasedRemoteLogMetadataManagerConfig
 
 import java.lang.{Long => JLong}
 import java.nio.ByteBuffer
@@ -392,7 +392,7 @@ class KafkaApis(val requestChannel: RequestChannel,
     if (isBrokerEpochStale(zkSupport, updateMetadataRequest.brokerEpoch, updateMetadataRequest.maxBrokerEpoch)) {
       // When the broker restarts very quickly, it is possible for this broker to receive request intended
       // for its previous generation so the broker should skip the stale request.
-      info("Received update metadata request with stale broker epoch info " +
+      info("Received update remoteLogMetadata request with stale broker epoch info " +
         s"(broker epoch: ${updateMetadataRequest.brokerEpoch}, max broker epoch: ${updateMetadataRequest.maxBrokerEpoch}) " +
         s"when the current broker epoch ${zkSupport.controller.brokerEpoch}")
       requestHelper.sendResponseExemptThrottle(request,
@@ -555,7 +555,7 @@ class KafkaApis(val requestChannel: RequestChannel,
         //   - For v5 and beyond there is no per partition expiration timestamp, so this field is no longer in effect
         val currentTimestamp = time.milliseconds
         val partitionData = authorizedTopicRequestInfo.map { case (k, partitionData) =>
-          val metadata = if (partitionData.committedMetadata == null)
+          val remoteLogMetadata = if (partitionData.committedMetadata == null)
             OffsetAndMetadata.NoMetadata
           else
             partitionData.committedMetadata
@@ -568,7 +568,7 @@ class KafkaApis(val requestChannel: RequestChannel,
           k -> new OffsetAndMetadata(
             offset = partitionData.committedOffset,
             leaderEpoch = leaderEpochOpt,
-            metadata = metadata,
+            remoteLogMetadata = remoteLogMetadata,
             commitTimestamp = partitionData.commitTimestamp match {
               case OffsetCommitRequest.DEFAULT_TIMESTAMP => currentTimestamp
               case customTimestamp => customTimestamp
@@ -702,7 +702,7 @@ class KafkaApis(val requestChannel: RequestChannel,
 
         // no operation needed if producer request.required.acks = 0; however, if there is any error in handling
         // the request, since no response is expected by the producer, the server will close socket server so that
-        // the producer client will know that some error has happened and will refresh its metadata
+        // the producer client will know that some error has happened and will refresh its remoteLogMetadata
         if (errorInResponse) {
           val exceptionsSummary = mergedResponseStatus.map { case (topicPartition, status) =>
             topicPartition -> status.error.exceptionName
@@ -777,7 +777,7 @@ class KafkaApis(val requestChannel: RequestChannel,
     val clientId = request.header.clientId
     val fetchRequest = request.body[FetchRequest]
     val fetchContext = fetchManager.newContext(
-      fetchRequest.metadata,
+      fetchRequest.remoteLogMetadata,
       fetchRequest.fetchData,
       fetchRequest.toForget,
       fetchRequest.isFromFollower)
@@ -830,7 +830,7 @@ class KafkaApis(val requestChannel: RequestChannel,
     def maybeDownConvertStorageError(error: Errors): Errors = {
       // If consumer sends FetchRequest V5 or earlier, the client library is not guaranteed to recognize the error code
       // for KafkaStorageException. In this case the client library will translate KafkaStorageException to
-      // UnknownServerException which is not retriable. We can ensure that consumer will update metadata and retry
+      // UnknownServerException which is not retriable. We can ensure that consumer will update remoteLogMetadata and retry
       // by converting the KafkaStorageException to NotLeaderOrFollowerException in the response if FetchRequest version <= 5
       if (error == Errors.KAFKA_STORAGE_ERROR && versionId <= 5) {
         Errors.NOT_LEADER_OR_FOLLOWER
@@ -974,7 +974,7 @@ class KafkaApis(val requestChannel: RequestChannel,
         val responseSize = KafkaApis.sizeOfThrottledPartitions(versionId, unconvertedFetchResponse, quotas.leader)
         quotas.leader.record(responseSize)
         trace(s"Sending Fetch response with partitions.size=${unconvertedFetchResponse.responseData.size}, " +
-          s"metadata=${unconvertedFetchResponse.sessionId}")
+          s"remoteLogMetadata=${unconvertedFetchResponse.sessionId}")
         requestHelper.sendResponseExemptThrottle(request, createResponse(0), Some(updateConversionStats))
       } else {
         // Fetch size used to determine throttle time is calculated before any down conversions.
@@ -1008,7 +1008,7 @@ class KafkaApis(val requestChannel: RequestChannel,
         } else {
           // Get the actual response. This will update the fetch context.
           unconvertedFetchResponse = fetchContext.updateAndGenerateResponseData(partitions)
-          trace(s"Sending Fetch response with partitions.size=$responseSize, metadata=${unconvertedFetchResponse.sessionId}")
+          trace(s"Sending Fetch response with partitions.size=$responseSize, remoteLogMetadata=${unconvertedFetchResponse.sessionId}")
           (0, 0)
         }
         requestHelper.throttle(quotas.fetch, request, effectiveBandwidthThrottleTime)
@@ -1379,7 +1379,7 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     val brokers = metadataCache.getAliveBrokerNodes(request.context.listenerName)
 
-    trace("Sending topic metadata %s and brokers %s for correlation id %d to client %s".format(completeTopicMetadata.mkString(","),
+    trace("Sending topic remoteLogMetadata %s and brokers %s for correlation id %d to client %s".format(completeTopicMetadata.mkString(","),
       brokers.mkString(","), request.header.correlationId, request.header.clientId))
 
     requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
@@ -1478,11 +1478,11 @@ class KafkaApis(val requestChannel: RequestChannel,
   private def handleOffsetFetchRequestV8AndAbove(request: RequestChannel.Request): Unit = {
     val header = request.header
     val offsetFetchRequest = request.body[OffsetFetchRequest]
-    val groupIds = offsetFetchRequest.groupIds().asScala
+    val keys = offsetFetchRequest.keys().asScala
     val groupToErrorMap =  mutable.Map.empty[String, Errors]
     val groupToPartitionData =  mutable.Map.empty[String, util.Map[TopicPartition, PartitionData]]
     val groupToTopicPartitions = offsetFetchRequest.groupIdsToPartitions()
-    groupIds.foreach(g => {
+    keys.foreach(g => {
       val (error, partitionData) = fetchOffsets(g,
         offsetFetchRequest.isAllPartitionsForGroup(g),
         offsetFetchRequest.requireStable(),
@@ -1621,8 +1621,8 @@ class KafkaApis(val requestChannel: RequestChannel,
           val coordinatorEndpoint = topicMetadata.head.partitions.asScala
             .find(_.partitionIndex == partition)
             .filter(_.leaderId != MetadataResponse.NO_LEADER_ID)
-            .flatMap(metadata => metadataCache.
-                getAliveBrokerNode(metadata.leaderId, request.context.listenerName))
+            .flatMap(remoteLogMetadata => metadataCache.
+                getAliveBrokerNode(remoteLogMetadata.leaderId, request.context.listenerName))
 
           coordinatorEndpoint match {
             case Some(endpoint) =>
@@ -1660,7 +1660,7 @@ class KafkaApis(val requestChannel: RequestChannel,
             .setClientId(member.clientId)
             .setClientHost(member.clientHost)
             .setMemberAssignment(member.assignment)
-            .setMemberMetadata(member.metadata)
+            .setMemberMetadata(member.remoteLogMetadata)
         }
 
         val describedGroup = new DescribeGroupsResponseData.DescribedGroup()
@@ -1763,7 +1763,7 @@ class KafkaApis(val requestChannel: RequestChannel,
 
       // let the coordinator handle join-group
       val protocols = joinGroupRequest.data.protocols.valuesList.asScala.map(protocol =>
-        (protocol.name, protocol.metadata)).toList
+        (protocol.name, protocol.remoteLogMetadata)).toList
 
       groupCoordinator.handleJoinGroup(
         joinGroupRequest.data.groupId,
@@ -2663,11 +2663,11 @@ class KafkaApis(val requestChannel: RequestChannel,
   private def convertTxnOffsets(offsetsMap: immutable.Map[TopicPartition, TxnOffsetCommitRequest.CommittedOffset]): immutable.Map[TopicPartition, OffsetAndMetadata] = {
     val currentTimestamp = time.milliseconds
     offsetsMap.map { case (topicPartition, partitionData) =>
-      val metadata = if (partitionData.metadata == null) OffsetAndMetadata.NoMetadata else partitionData.metadata
+      val remoteLogMetadata = if (partitionData.remoteLogMetadata == null) OffsetAndMetadata.NoMetadata else partitionData.remoteLogMetadata
       topicPartition -> new OffsetAndMetadata(
         offset = partitionData.offset,
         leaderEpoch = partitionData.leaderEpoch,
-        metadata = metadata,
+        remoteLogMetadata = remoteLogMetadata,
         commitTimestamp = currentTimestamp,
         expireTimestamp = None)
     }
@@ -3894,16 +3894,16 @@ object KafkaApis {
 
   // visible for testing
   private[server] def shouldNeverReceive(request: RequestChannel.Request): Exception = {
-    new UnsupportedVersionException(s"Should never receive when using a Raft-based metadata quorum: ${request.header.apiKey()}")
+    new UnsupportedVersionException(s"Should never receive when using a Raft-based remoteLogMetadata quorum: ${request.header.apiKey()}")
   }
 
   // visible for testing
   private[server] def shouldAlwaysForward(request: RequestChannel.Request): Exception = {
-    new UnsupportedVersionException(s"Should always be forwarded to the Active Controller when using a Raft-based metadata quorum: ${request.header.apiKey}")
+    new UnsupportedVersionException(s"Should always be forwarded to the Active Controller when using a Raft-based remoteLogMetadata quorum: ${request.header.apiKey}")
   }
 
   private def unsupported(text: String): Exception = {
-    new UnsupportedVersionException(s"Unsupported when using a Raft-based metadata quorum: $text")
+    new UnsupportedVersionException(s"Unsupported when using a Raft-based remoteLogMetadata quorum: $text")
   }
 
   private def notYetSupported(request: RequestChannel.Request): Exception = {
@@ -3911,6 +3911,6 @@ object KafkaApis {
   }
 
   private def notYetSupported(text: String): Exception = {
-    new UnsupportedVersionException(s"Not yet supported when using a Raft-based metadata quorum: $text")
+    new UnsupportedVersionException(s"Not yet supported when using a Raft-based remoteLogMetadata quorum: $text")
   }
 }

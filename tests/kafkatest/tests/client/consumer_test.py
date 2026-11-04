@@ -94,7 +94,7 @@ class OffsetValidationTest(VerifiableConsumerTest):
 
         producer = self.setup_producer(self.TOPIC)
         # The consumers' session timeouts must exceed the time it takes for a broker to roll.  Consumers are likely
-        # to see cluster metadata consisting of just a single alive broker in the case where the cluster has just 2
+        # to see cluster remoteLogMetadata consisting of just a single alive broker in the case where the cluster has just 2
         # brokers and the cluster is rolling (which is what is happening here).  When the consumer sees a single alive
         # broker, and then that broker rolls, the consumer will be unable to connect to the cluster until that broker
         # completes its roll.  In the meantime, the consumer group will move to the group coordinator on the other

@@ -49,7 +49,7 @@ class MetadataRequestWithForwardingTest extends AbstractMetadataRequestTest {
     assertNull(response1.errors.get(topic1))
     checkAutoCreatedTopic(topic2, response1)
 
-    // The default behavior in old versions of the metadata API is to allow topic creation, so
+    // The default behavior in old versions of the remoteLogMetadata API is to allow topic creation, so
     // protocol downgrades should happen gracefully when auto-creation is explicitly requested.
     val response2 = sendMetadataRequest(new MetadataRequest.Builder(Seq(topic3).asJava, true).build(1))
     checkAutoCreatedTopic(topic3, response2)
@@ -86,7 +86,7 @@ class MetadataRequestWithForwardingTest extends AbstractMetadataRequestTest {
     val response1 = sendMetadataRequest(new MetadataRequest.Builder(Seq(topic1, topic2).asJava, true).build)
     assertEquals(2, response1.topicMetadata.size)
 
-    val responseMap = response1.topicMetadata.asScala.map(metadata => (metadata.topic(), metadata.error)).toMap
+    val responseMap = response1.topicMetadata.asScala.map(remoteLogMetadata => (remoteLogMetadata.topic(), remoteLogMetadata.error)).toMap
 
     assertEquals(Set(topic1, topic2), responseMap.keySet)
     // The topic creation will be delayed, and the name collision error will be swallowed.
@@ -96,7 +96,7 @@ class MetadataRequestWithForwardingTest extends AbstractMetadataRequestTest {
     TestUtils.waitUntilLeaderIsElectedOrChanged(zkClient, topicCreated, 0)
     TestUtils.waitForPartitionMetadata(servers, topicCreated, 0)
 
-    // retry the metadata for the first auto created topic
+    // retry the remoteLogMetadata for the first auto created topic
     val response2 = sendMetadataRequest(new MetadataRequest.Builder(Seq(topicCreated).asJava, true).build)
     val topicMetadata1 = response2.topicMetadata.asScala.head
     assertEquals(Errors.NONE, topicMetadata1.error)

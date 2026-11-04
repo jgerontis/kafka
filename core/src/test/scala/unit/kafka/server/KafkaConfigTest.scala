@@ -1233,7 +1233,7 @@ class KafkaConfigTest {
 
   @Test
   def testCustomMetadataLogDir(): Unit = {
-    val metadataDir = "/path/to/metadata/dir"
+    val metadataDir = "/path/to/remoteLogMetadata/dir"
     val dataDir = "/path/to/data/dir"
 
     val props = new Properties()

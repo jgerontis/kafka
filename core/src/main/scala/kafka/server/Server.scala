@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.common.metrics.{JmxReporter, KafkaMetricsContext, MetricConfig, Metrics, MetricsReporter, Sensor}
 import org.apache.kafka.common.utils.Time
-import org.apache.kafka.metadata.VersionRange
+import org.apache.kafka.remoteLogMetadata.VersionRange
 
 import scala.jdk.CollectionConverters._
 

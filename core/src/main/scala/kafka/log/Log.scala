@@ -160,7 +160,7 @@ case class LogReadInfo(fetchedData: FetchDataInfo,
                        lastStableOffset: Long)
 
 /**
- * A class used to hold useful metadata about a completed transaction. This is used to build
+ * A class used to hold useful remoteLogMetadata about a completed transaction. This is used to build
  * the transaction index after appending to the log.
  *
  * @param producerId The ID of the producer
@@ -254,13 +254,13 @@ case object RemoteLogStorageDisabled extends LogStartOffsetIncrementReason {
  * @param producerStateManager The ProducerStateManager instance containing state associated with the provided segments
  * @param _topicId optional Uuid to specify the topic ID for the topic if it exists. Should only be specified when
  *                first creating the log through Partition.makeLeader or Partition.makeFollower. When reloading a log,
- *                this field will be populated by reading the topic ID value from partition.metadata if it exists.
- * @param keepPartitionMetadataFile boolean flag to indicate whether the partition.metadata file should be kept in the
- *                                  log directory. A partition.metadata file is only created when the raft controller is used
+ *                this field will be populated by reading the topic ID value from partition.remoteLogMetadata if it exists.
+ * @param keepPartitionMetadataFile boolean flag to indicate whether the partition.remoteLogMetadata file should be kept in the
+ *                                  log directory. A partition.remoteLogMetadata file is only created when the raft controller is used
  *                                  or the ZK controller and this broker's inter-broker protocol version is at least 2.8.
  *                                  This file will persist the topic ID on the broker. If inter-broker protocol for a ZK controller
  *                                  is downgraded below 2.8, a topic ID may be lost and a new ID generated upon re-upgrade.
- *                                  If the inter-broker protocol version on a ZK cluster is below 2.8, partition.metadata
+ *                                  If the inter-broker protocol version on a ZK cluster is below 2.8, partition.remoteLogMetadata
  *                                  will be deleted to avoid ID conflicts upon re-upgrade.
  */
 @threadsafe
@@ -340,13 +340,13 @@ class Log(@volatile private var _dir: File,
   }
 
   /**
-   * Initialize topic ID information for the log by maintaining the partition metadata file and setting the in-memory _topicId.
-   * Delete partition metadata file if the version does not support topic IDs.
+   * Initialize topic ID information for the log by maintaining the partition remoteLogMetadata file and setting the in-memory _topicId.
+   * Delete partition remoteLogMetadata file if the version does not support topic IDs.
    * Set _topicId based on a few scenarios:
    *   - Recover topic ID if present and topic IDs are supported. Ensure we do not try to assign a provided topicId that is inconsistent
    *     with the ID on file.
-   *   - If we were provided a topic ID when creating the log, partition metadata files are supported, and one does not yet exist
-   *     set _topicId and write to the partition metadata file.
+   *   - If we were provided a topic ID when creating the log, partition remoteLogMetadata files are supported, and one does not yet exist
+   *     set _topicId and write to the partition remoteLogMetadata file.
    *   - Otherwise set _topicId to None
    */
   def initializeTopicId(): Unit =  {
@@ -366,12 +366,12 @@ class Log(@volatile private var _dir: File,
         try partMetadataFile.delete()
         catch {
           case e: IOException =>
-            error(s"Error while trying to delete partition metadata file ${partMetadataFile}", e)
+            error(s"Error while trying to delete partition remoteLogMetadata file ${partMetadataFile}", e)
         }
       }
     } else if (keepPartitionMetadataFile) {
       _topicId.foreach(partMetadataFile.record)
-      scheduler.schedule("flush-metadata-file", maybeFlushMetadataFile)
+      scheduler.schedule("flush-remoteLogMetadata-file", maybeFlushMetadataFile)
     } else {
       // We want to keep the file and the in-memory topic ID in sync.
       _topicId = None
@@ -426,10 +426,10 @@ class Log(@volatile private var _dir: File,
   }
 
   /**
-   * Update high watermark with offset metadata. The new high watermark will be lower
+   * Update high watermark with offset remoteLogMetadata. The new high watermark will be lower
    * bounded by the log start offset and upper bounded by the log end offset.
    *
-   * @param highWatermarkMetadata the suggested high watermark with offset metadata
+   * @param highWatermarkMetadata the suggested high watermark with offset remoteLogMetadata
    * @return the updated high watermark offset
    */
   def updateHighWatermark(highWatermarkMetadata: LogOffsetMetadata): Long = {
@@ -473,7 +473,7 @@ class Log(@volatile private var _dir: File,
       val oldHighWatermark = fetchHighWatermarkMetadata
 
       // Ensure that the high watermark increases monotonically. We also update the high watermark when the new
-      // offset metadata is on a newer segment, which occurs whenever the log is rolled to a new segment.
+      // offset remoteLogMetadata is on a newer segment, which occurs whenever the log is rolled to a new segment.
       if (oldHighWatermark.messageOffset < newHighWatermark.messageOffset ||
         (oldHighWatermark.messageOffset == newHighWatermark.messageOffset && oldHighWatermark.onOlderSegment(newHighWatermark))) {
         updateHighWatermarkMetadata(newHighWatermark)
@@ -485,7 +485,7 @@ class Log(@volatile private var _dir: File,
   }
 
   /**
-   * Get the offset and metadata for the current high watermark. If offset metadata is not
+   * Get the offset and remoteLogMetadata for the current high watermark. If offset remoteLogMetadata is not
    * known, this will do a lookup in the index and cache the result.
    */
   private def fetchHighWatermarkMetadata: LogOffsetMetadata = {
@@ -633,9 +633,9 @@ class Log(@volatile private var _dir: File,
             case Some(partMetadataFile) =>
               if (!partMetadataFile.exists()) {
                 partMetadataFile.record(topicId)
-                scheduler.schedule("flush-metadata-file", maybeFlushMetadataFile)
+                scheduler.schedule("flush-remoteLogMetadata-file", maybeFlushMetadataFile)
               }
-            case _ => warn(s"The topic id $topicId will not be persisted to the partition metadata file " +
+            case _ => warn(s"The topic id $topicId will not be persisted to the partition remoteLogMetadata file " +
               "since the partition is deleted")
           }
         }
@@ -650,7 +650,7 @@ class Log(@volatile private var _dir: File,
     nextOffsetMetadata = LogOffsetMetadata(offset, activeSegment.baseOffset, activeSegment.size)
 
     // Update the high watermark in case it has gotten ahead of the log end offset following a truncation
-    // or if a new segment has been rolled and the offset metadata needs to be updated.
+    // or if a new segment has been rolled and the offset remoteLogMetadata needs to be updated.
     if (highWatermark >= offset) {
       updateHighWatermarkMetadata(nextOffsetMetadata)
     }
@@ -752,7 +752,7 @@ class Log(@volatile private var _dir: File,
    * StopReplica request, then the shouldReinitialize parameter should be set to false, otherwise it should be set to true.
    *
    * @param name The new name that this log's directory is being renamed to
-   * @param shouldReinitialize Whether the log's metadata should be reinitialized after renaming
+   * @param shouldReinitialize Whether the log's remoteLogMetadata should be reinitialized after renaming
    * @throws KafkaStorageException if rename fails
    */
   def renameDir(name: String, shouldReinitialize: Boolean): Unit = {
@@ -931,7 +931,7 @@ class Log(@volatile private var _dir: File,
                      leaderEpoch: Int,
                      requestLocal: Option[RequestLocal],
                      ignoreRecordSize: Boolean): LogAppendInfo = {
-    // We want to ensure the partition metadata file is written to the log dir before any log data is written to disk.
+    // We want to ensure the partition remoteLogMetadata file is written to the log dir before any log data is written to disk.
     // This will ensure that any log data can be recovered with the correct topic ID in the case of failure.
     maybeFlushMetadataFile()
 
@@ -1056,7 +1056,7 @@ class Log(@volatile private var _dir: File,
             relativePositionInSegment = segment.size)
 
           // now that we have valid records, offsets assigned, and timestamps updated, we need to
-          // validate the idempotent/transactional state of the producers and collect some metadata
+          // validate the idempotent/transactional state of the producers and collect some remoteLogMetadata
           val (updatedProducers, completedTxns, maybeDuplicate) = analyzeAndValidateProducerState(
             logOffsetMetadata, validRecords, origin)
 
@@ -1067,7 +1067,7 @@ class Log(@volatile private var _dir: File,
               appendInfo.logAppendTime = duplicate.timestamp
               appendInfo.logStartOffset = logStartOffset
             case None =>
-              // Before appending update the first offset metadata to include segment information
+              // Before appending update the first offset remoteLogMetadata to include segment information
               appendInfo.firstOffset = appendInfo.firstOffset.map { offsetMetadata =>
                 offsetMetadata.copy(segmentBaseOffset = segment.baseOffset, relativePositionInSegment = segment.size)
               }
@@ -1215,7 +1215,7 @@ class Log(@volatile private var _dir: File,
     records.batches.forEach { batch =>
       if (batch.hasProducerId) {
         // if this is a client produce request, there will be up to 5 batches which could have been duplicated.
-        // If we find a duplicate, we return the metadata of the appended batch to the client.
+        // If we find a duplicate, we return the remoteLogMetadata of the appended batch to the client.
         if (origin == AppendOrigin.Client) {
           val maybeLastEntry = producerStateManager.lastEntry(batch.producerId)
 
@@ -1224,7 +1224,7 @@ class Log(@volatile private var _dir: File,
           }
         }
 
-        // We cache offset metadata for the start of each transaction. This allows us to
+        // We cache offset remoteLogMetadata for the start of each transaction. This allows us to
         // compute the last stable offset without relying on additional index lookups.
         val firstOffsetMetadata = if (batch.isTransactional)
           Some(LogOffsetMetadata(batch.baseOffset, appendOffsetMetadata.segmentBaseOffset, relativePositionInSegment))
@@ -1379,7 +1379,7 @@ class Log(@volatile private var _dir: File,
    * @param isolation The fetch isolation, which controls the maximum offset we are allowed to read
    * @param minOneMessage If this is true, the first message will be returned even if it exceeds `maxLength` (if one exists)
    * @throws OffsetOutOfRangeException If startOffset is beyond the log end offset or before the log start offset
-   * @return The fetch data information including fetch starting offset metadata and messages read.
+   * @return The fetch data information including fetch starting offset remoteLogMetadata and messages read.
    */
   def read(startOffset: Long,
            maxLength: Int,
@@ -1438,7 +1438,7 @@ class Log(@volatile private var _dir: File,
         else {
           // okay we are beyond the end of the last segment with no data fetched although the start offset is in range,
           // this can happen when all messages with offset larger than start offsets have been deleted.
-          // In this case, we will return the empty set with log end offset metadata
+          // In this case, we will return the empty set with log end offset remoteLogMetadata
           FetchDataInfo(nextOffsetMetadata, MemoryRecords.EMPTY)
         }
       }
@@ -1629,7 +1629,7 @@ class Log(@volatile private var _dir: File,
   }
 
   /**
-    * Given a message offset, find its corresponding offset metadata in the log.
+    * Given a message offset, find its corresponding offset remoteLogMetadata in the log.
     * If the message offset is out of range, throw an OffsetOutOfRangeException
     */
   private def convertToOffsetMetadataOrThrow(offset: Long): LogOffsetMetadata = {
@@ -1791,7 +1791,7 @@ class Log(@volatile private var _dir: File,
   def size: Long = Log.sizeInBytes(logSegments)
 
   /**
-   * The offset metadata of the next message that will be appended to the log
+   * The offset remoteLogMetadata of the next message that will be appended to the log
    */
   def logEndOffsetMetadata: LogOffsetMetadata = nextOffsetMetadata
 
@@ -1912,7 +1912,7 @@ class Log(@volatile private var _dir: File,
           preallocate = config.preallocate)
         addSegment(segment)
 
-        // We need to update the segment base offset and append position data of the metadata when log rolls.
+        // We need to update the segment base offset and append position data of the remoteLogMetadata when log rolls.
         // The next offset should not change.
         updateLogEndOffset(nextOffsetMetadata.messageOffset)
 
@@ -2054,7 +2054,7 @@ class Log(@volatile private var _dir: File,
               endOffset = targetOffset
             )
           }
-          // FIXME: this code path involves not only data plane segments but also KRaft metadata logs.  Should find a way to distinguish after moving to KRaft.
+          // FIXME: this code path involves not only data plane segments but also KRaft remoteLogMetadata logs.  Should find a way to distinguish after moving to KRaft.
           // XXX: An internal dashboard depends on parsing this warn log line. Get SRE reviews before changing the format.
           warn(s"Attempted truncating to offset $targetOffset. Resulted in truncated to $offsetTruncatedTo from the original log end offset $originalLogEndOffset, " +
             s"with $messagesTruncated messages and $bytesTruncated bytes truncated")

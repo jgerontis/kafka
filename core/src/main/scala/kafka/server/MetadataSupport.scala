@@ -19,7 +19,7 @@ package kafka.server
 
 import kafka.controller.KafkaController
 import kafka.network.RequestChannel
-import kafka.server.metadata.KRaftMetadataCache
+import kafka.server.remoteLogMetadata.KRaftMetadataCache
 import kafka.zk.{AdminZkClient, KafkaZkClient}
 import org.apache.kafka.common.requests.AbstractResponse
 
@@ -75,7 +75,7 @@ case class ZkSupport(adminManager: ZkAdminManager,
 
   override def ensureConsistentWith(config: KafkaConfig): Unit = {
     if (!config.requiresZookeeper) {
-      throw new IllegalStateException("Config specifies Raft but metadata support instance is for ZooKeeper")
+      throw new IllegalStateException("Config specifies Raft but remoteLogMetadata support instance is for ZooKeeper")
     }
   }
 
@@ -99,7 +99,7 @@ case class RaftSupport(fwdMgr: ForwardingManager, metadataCache: KRaftMetadataCa
 
   override def ensureConsistentWith(config: KafkaConfig): Unit = {
     if (config.requiresZookeeper) {
-      throw new IllegalStateException("Config specifies ZooKeeper but metadata support instance is for Raft")
+      throw new IllegalStateException("Config specifies ZooKeeper but remoteLogMetadata support instance is for Raft")
     }
   }
 

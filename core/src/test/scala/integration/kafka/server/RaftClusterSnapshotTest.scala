@@ -22,7 +22,7 @@ import kafka.testkit.KafkaClusterTestKit
 import kafka.testkit.TestKitNodes
 import kafka.utils.TestUtils
 import org.apache.kafka.common.utils.BufferSupplier;
-import org.apache.kafka.metadata.MetadataRecordSerde
+import org.apache.kafka.remoteLogMetadata.MetadataRecordSerde
 import org.apache.kafka.snapshot.SnapshotReader
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals

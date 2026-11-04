@@ -156,7 +156,7 @@ class ServerGenerateBrokerIdTest extends ZooKeeperTestHarness {
     assertThrows(classOf[NodeExistsException], () => serverB.startup())
     servers = Seq(serverA)
 
-    // verify no broker metadata was written
+    // verify no broker remoteLogMetadata was written
     serverB.config.logDirs.foreach { logDir =>
       val brokerMetaFile = new File(logDir + File.separator + brokerMetaPropsFile)
       assertFalse(brokerMetaFile.exists())
@@ -171,7 +171,7 @@ class ServerGenerateBrokerIdTest extends ZooKeeperTestHarness {
     serverA.shutdown()
     newServerB.shutdown()
 
-    // verify correct broker metadata was written
+    // verify correct broker remoteLogMetadata was written
     assertTrue(verifyBrokerMetadata(serverA.config.logDirs, 1))
     assertTrue(verifyBrokerMetadata(newServerB.config.logDirs, 2))
     TestUtils.assertNoNonDaemonThreads(this.getClass.getName)

@@ -898,7 +898,7 @@ abstract class AbstractControllerBrokerRequestBatch(config: KafkaConfig,
             s"the map is $leaderAndIsrRequestMap. Exception message: $e")
         }
         if (updateMetadataRequestBrokerSet.nonEmpty) {
-          error(s"Haven't been able to send metadata update requests to brokers $updateMetadataRequestBrokerSet, " +
+          error(s"Haven't been able to send remoteLogMetadata update requests to brokers $updateMetadataRequestBrokerSet, " +
             s"current state of the partition info is $updateMetadataRequestPartitionInfoMap. Exception message: $e")
         }
         if (stopReplicaRequestMap.nonEmpty) {

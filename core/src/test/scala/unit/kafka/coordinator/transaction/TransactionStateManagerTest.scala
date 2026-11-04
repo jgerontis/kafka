@@ -309,17 +309,17 @@ class TransactionStateManagerTest {
   def testCompleteTransitionWhenAppendSucceeded(): Unit = {
     transactionManager.addLoadedTransactionsToCache(partitionId, coordinatorEpoch, new Pool[String, TransactionMetadata]())
 
-    // first insert the initial transaction metadata
+    // first insert the initial transaction remoteLogMetadata
     transactionManager.putTransactionStateIfNotExists(txnMetadata1)
 
     prepareForTxnMessageAppend(Errors.NONE)
     expectedError = Errors.NONE
 
-    // update the metadata to ongoing with two partitions
+    // update the remoteLogMetadata to ongoing with two partitions
     val newMetadata = txnMetadata1.prepareAddPartitions(Set[TopicPartition](new TopicPartition("topic1", 0),
       new TopicPartition("topic1", 1)), time.milliseconds())
 
-    // append the new metadata into log
+    // append the new remoteLogMetadata into log
     transactionManager.appendTransactionToLog(transactionalId1, coordinatorEpoch, newMetadata, assertCallback, requestLocal = RequestLocal.withThreadConfinedCaching)
 
     assertEquals(Right(Some(CoordinatorEpochAndTxnMetadata(coordinatorEpoch, txnMetadata1))), transactionManager.getTransactionState(transactionalId1))
@@ -443,7 +443,7 @@ class TransactionStateManagerTest {
   def testAppendTransactionToLogWhileProducerFenced(): Unit = {
     transactionManager.addLoadedTransactionsToCache(partitionId, 0, new Pool[String, TransactionMetadata]())
 
-    // first insert the initial transaction metadata
+    // first insert the initial transaction remoteLogMetadata
     transactionManager.putTransactionStateIfNotExists(txnMetadata1)
 
     prepareForTxnMessageAppend(Errors.NONE)
@@ -452,16 +452,16 @@ class TransactionStateManagerTest {
     val newMetadata = txnMetadata1.prepareAddPartitions(Set[TopicPartition](new TopicPartition("topic1", 0),
       new TopicPartition("topic1", 1)), time.milliseconds())
 
-    // modify the cache while trying to append the new metadata
+    // modify the cache while trying to append the new remoteLogMetadata
     txnMetadata1.producerEpoch = (txnMetadata1.producerEpoch + 1).toShort
 
-    // append the new metadata into log
+    // append the new remoteLogMetadata into log
     transactionManager.appendTransactionToLog(transactionalId1, coordinatorEpoch = 10, newMetadata, assertCallback,  requestLocal = RequestLocal.withThreadConfinedCaching)
   }
 
   @Test
   def testAppendTransactionToLogWhilePendingStateChanged(): Unit = {
-    // first insert the initial transaction metadata
+    // first insert the initial transaction remoteLogMetadata
     transactionManager.addLoadedTransactionsToCache(partitionId, coordinatorEpoch, new Pool[String, TransactionMetadata]())
     transactionManager.putTransactionStateIfNotExists(txnMetadata1)
 
@@ -471,10 +471,10 @@ class TransactionStateManagerTest {
     val newMetadata = txnMetadata1.prepareAddPartitions(Set[TopicPartition](new TopicPartition("topic1", 0),
       new TopicPartition("topic1", 1)), time.milliseconds())
 
-    // modify the cache while trying to append the new metadata
+    // modify the cache while trying to append the new remoteLogMetadata
     txnMetadata1.pendingState = None
 
-    // append the new metadata into log
+    // append the new remoteLogMetadata into log
     assertThrows(classOf[IllegalStateException], () => transactionManager.appendTransactionToLog(transactionalId1,
       coordinatorEpoch = 10, newMetadata, assertCallback,  requestLocal = RequestLocal.withThreadConfinedCaching))
   }
@@ -839,16 +839,16 @@ class TransactionStateManagerTest {
   private def verifyMetadataDoesExistAndIsUsable(transactionalId: String): Unit = {
     transactionManager.getTransactionState(transactionalId) match {
       case Left(_) => fail("shouldn't have been any errors")
-      case Right(None) => fail("metadata should have been removed")
-      case Right(Some(metadata)) =>
-        assertTrue(metadata.transactionMetadata.pendingState.isEmpty, "metadata shouldn't be in a pending state")
+      case Right(None) => fail("remoteLogMetadata should have been removed")
+      case Right(Some(remoteLogMetadata)) =>
+        assertTrue(remoteLogMetadata.transactionMetadata.pendingState.isEmpty, "remoteLogMetadata shouldn't be in a pending state")
     }
   }
 
   private def verifyMetadataDoesntExist(transactionalId: String): Unit = {
     transactionManager.getTransactionState(transactionalId) match {
       case Left(_) => fail("shouldn't have been any errors")
-      case Right(Some(_)) => fail("metadata should have been removed")
+      case Right(Some(_)) => fail("remoteLogMetadata should have been removed")
       case Right(None) => // ok
     }
   }
@@ -960,9 +960,9 @@ class TransactionStateManagerTest {
     var txnId: String = null
     def rememberTxnMarkers(coordinatorEpoch: Int,
                            command: TransactionResult,
-                           metadata: TransactionMetadata,
+                           remoteLogMetadata: TransactionMetadata,
                            newMetadata: TxnTransitMetadata): Unit = {
-      txnId = metadata.transactionalId
+      txnId = remoteLogMetadata.transactionalId
     }
 
     transactionManager.loadTransactionsForTxnTopicPartition(partitionId, 0, rememberTxnMarkers)

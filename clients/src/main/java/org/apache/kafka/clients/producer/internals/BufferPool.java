@@ -267,7 +267,7 @@ public class BufferPool {
     public void deallocate(ByteBuffer buffer, int size) {
         lock.lock();
         try {
-            long availableMemory = availableMemoryUnlocked();
+            long availableMemory = this.nonPooledAvailableMemory + freeSize() * (long) this.poolableSize;
             if (availableMemory + size > this.totalMemory && nextOvermemoryWarn < this.time.milliseconds()) {
                 //Don't flood logs.
                 log.error("Detected an attempt to bring available memory " + availableMemory + " to " +
@@ -302,14 +302,10 @@ public class BufferPool {
     public long availableMemory() {
         lock.lock();
         try {
-            return availableMemoryUnlocked();
+            return this.nonPooledAvailableMemory + freeSize() * (long) this.poolableSize;
         } finally {
             lock.unlock();
         }
-    }
-
-    private long availableMemoryUnlocked() {
-        return this.nonPooledAvailableMemory + freeSize() * (long) this.poolableSize;
     }
 
     // Protected for testing.

@@ -100,7 +100,7 @@ class TestSnapshots(ProduceConsumeValidateTest):
 
     def wait_for_log_segment_delete(self, node):
         file_path = self.kafka.METADATA_FIRST_LOG
-        # Wait until the first log segment in metadata log is marked for deletion
+        # Wait until the first log segment in remoteLogMetadata log is marked for deletion
         wait_until(lambda: not self.file_exists(node, file_path),
                    timeout_sec=100,
                    backoff_sec=1, err_msg="Not able to verify cleanup of log file %s in a reasonable amount of time" % file_path)
@@ -146,20 +146,20 @@ class TestSnapshots(ProduceConsumeValidateTest):
     @cluster(num_nodes=9)
     @matrix(metadata_quorum=quorum.all_kraft)
     def test_broker(self, metadata_quorum=quorum.colocated_kraft):
-        """ Test the ability of a broker to consume metadata snapshots
-        and to recover the cluster metadata state using them
+        """ Test the ability of a broker to consume remoteLogMetadata snapshots
+        and to recover the cluster remoteLogMetadata state using them
 
         The test ensures that that there is atleast one snapshot created on
         the controller quorum during the setup phase and that at least the first
-        log segment in the metadata log has been marked for deletion, thereby ensuring
+        log segment in the remoteLogMetadata log has been marked for deletion, thereby ensuring
         that any observer of the log needs to always load a snapshot to catch
-        up to the current metadata state.
+        up to the current remoteLogMetadata state.
 
         Each scenario is a progression over the previous one.
         The scenarios build on top of each other by:
         * Loading a snapshot
         * Loading and snapshot and some delta records
-        * Loading a snapshot and delta and ensuring that the most recent metadata state
+        * Loading a snapshot and delta and ensuring that the most recent remoteLogMetadata state
           has been caught up.
 
         Even though a subsequent scenario covers the previous one, they are all
@@ -175,16 +175,16 @@ class TestSnapshots(ProduceConsumeValidateTest):
         self.kafka.start_node(node)
 
         # Scenario -- Re-init broker after cleaning up all persistent state
-        # Create some metadata changes for the broker to consume as well.
+        # Create some remoteLogMetadata changes for the broker to consume as well.
         node = random.choice(self.kafka.nodes)
         self.logger.debug("Scenario: kill-clean-create_topics-start on broker node %s", self.kafka.who_am_i(node))
         self.kafka.clean_node(node)
-        # Now modify the cluster to create more metadata changes
+        # Now modify the cluster to create more remoteLogMetadata changes
         self.topics_created += self.create_n_topics(topic_count=10)
         self.kafka.start_node(node)
 
         # Scenario -- Re-init broker after cleaning up all persistent state
-        # And ensure that the broker has replicated the metadata log
+        # And ensure that the broker has replicated the remoteLogMetadata log
         node = random.choice(self.kafka.nodes)
         self.logger.debug("Scenario: kill-clean-start-verify-produce on broker node %s", self.kafka.who_am_i(node))
         self.kafka.clean_node(node)
@@ -206,20 +206,20 @@ class TestSnapshots(ProduceConsumeValidateTest):
     @cluster(num_nodes=9)
     @matrix(metadata_quorum=quorum.all_kraft)
     def test_controller(self, metadata_quorum=quorum.colocated_kraft):
-        """ Test the ability of controllers to consume metadata snapshots
-        and to recover the cluster metadata state using them
+        """ Test the ability of controllers to consume remoteLogMetadata snapshots
+        and to recover the cluster remoteLogMetadata state using them
 
         The test ensures that that there is atleast one snapshot created on
         the controller quorum during the setup phase and that at least the first
-        log segment in the metadata log has been marked for deletion, thereby ensuring
+        log segment in the remoteLogMetadata log has been marked for deletion, thereby ensuring
         that any observer of the log needs to always load a snapshot to catch
-        up to the current metadata state.
+        up to the current remoteLogMetadata state.
 
         Each scenario is a progression over the previous one.
         The scenarios build on top of each other by:
         * Loading a snapshot
         * Loading and snapshot and some delta records
-        * Loading a snapshot and delta and ensuring that the most recent metadata state
+        * Loading a snapshot and delta and ensuring that the most recent remoteLogMetadata state
           has been caught up.
 
         Even though a subsequent scenario covers the previous one, they are all
@@ -236,14 +236,14 @@ class TestSnapshots(ProduceConsumeValidateTest):
             self.kafka.controller_quorum.start_node(node)
 
         # Scenario -- Re-init controllers with a clean kafka dir and
-        # make metadata changes while they are down.
+        # make remoteLogMetadata changes while they are down.
         # This will force the entire quorum to load from snapshots
-        # and verify the quorum's ability to catch up to the latest metadata
+        # and verify the quorum's ability to catch up to the latest remoteLogMetadata
         self.logger.debug("Scenario: kill-clean-create_topics-start on controller node %s")
         for node in self.controller_nodes:
             self.logger.debug("Restarting node: %s", self.kafka.controller_quorum.who_am_i(node))
             self.kafka.controller_quorum.clean_node(node)
-            # Now modify the cluster to create more metadata changes
+            # Now modify the cluster to create more remoteLogMetadata changes
             self.topics_created += self.create_n_topics(topic_count=5)
             self.kafka.controller_quorum.start_node(node)
 

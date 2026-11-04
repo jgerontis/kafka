@@ -41,7 +41,7 @@ import org.apache.kafka.common.message.LeaderAndIsrRequestData
 import org.apache.kafka.common.message.LeaderAndIsrRequestData.LeaderAndIsrPartitionState
 import org.apache.kafka.common.message.OffsetForLeaderEpochResponseData.EpochEndOffset
 import org.apache.kafka.common.message.StopReplicaRequestData.StopReplicaPartitionState
-import org.apache.kafka.common.metadata.{PartitionChangeRecord, PartitionRecord, RemoveTopicRecord, TopicRecord}
+import org.apache.kafka.common.remoteLogMetadata.{PartitionChangeRecord, PartitionRecord, RemoveTopicRecord, TopicRecord}
 import org.apache.kafka.common.metrics.Metrics
 import org.apache.kafka.common.network.ListenerName
 import org.apache.kafka.common.protocol.{ApiKeys, Errors}
@@ -938,12 +938,12 @@ class ReplicaManagerTest {
       offsetCheckpoints,
       None)
 
-    val metadata: ClientMetadata = new DefaultClientMetadata("rack-a", "client-id",
+    val remoteLogMetadata: ClientMetadata = new DefaultClientMetadata("rack-a", "client-id",
       InetAddress.getByName("localhost"), KafkaPrincipal.ANONYMOUS, "default")
 
     // We expect to select the leader, which means we return None
     val preferredReadReplica: Option[Int] = replicaManager.findPreferredReadReplica(
-      partition, metadata, Request.OrdinaryConsumerId, 1L, System.currentTimeMillis)
+      partition, remoteLogMetadata, Request.OrdinaryConsumerId, 1L, System.currentTimeMillis)
     assertFalse(preferredReadReplica.isDefined)
   }
 
@@ -990,12 +990,12 @@ class ReplicaManagerTest {
         Set(new Node(0, "host1", 0), new Node(1, "host2", 1)).asJava).build()
       replicaManager.becomeLeaderOrFollower(1, leaderAndIsrRequest2, (_, _) => ())
 
-      val metadata: ClientMetadata = new DefaultClientMetadata("rack-a", "client-id",
+      val remoteLogMetadata: ClientMetadata = new DefaultClientMetadata("rack-a", "client-id",
         InetAddress.getByName("localhost"), KafkaPrincipal.ANONYMOUS, "default")
 
       val consumerResult = fetchAsConsumer(replicaManager, tp0,
         new PartitionData(0, 0, 100000, Optional.empty()),
-        clientMetadata = Some(metadata))
+        clientMetadata = Some(remoteLogMetadata))
 
       // Fetch from follower succeeds
       assertTrue(consumerResult.isFired)
@@ -1051,12 +1051,12 @@ class ReplicaManagerTest {
         Set(new Node(0, "host1", 0), new Node(1, "host2", 1)).asJava).build()
       replicaManager.becomeLeaderOrFollower(1, leaderAndIsrRequest2, (_, _) => ())
 
-      val metadata: ClientMetadata = new DefaultClientMetadata("rack-a", "client-id",
+      val remoteLogMetadata: ClientMetadata = new DefaultClientMetadata("rack-a", "client-id",
         InetAddress.getByName("localhost"), KafkaPrincipal.ANONYMOUS, "default")
 
       val consumerResult = fetchAsConsumer(replicaManager, tp0,
         new PartitionData(0, 0, 100000, Optional.empty()),
-        clientMetadata = Some(metadata))
+        clientMetadata = Some(remoteLogMetadata))
 
       // Fetch from follower succeeds
       assertTrue(consumerResult.isFired)

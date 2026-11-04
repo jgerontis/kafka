@@ -82,7 +82,7 @@ class ProducerFailureHandlingTest extends KafkaServerTestHarness {
   }
 
   /**
-   * With ack == 0 the future metadata will have no exceptions with offset -1
+   * With ack == 0 the future remoteLogMetadata will have no exceptions with offset -1
    */
   @Test
   def testTooLargeRecordWithAckZero(): Unit = {
@@ -99,7 +99,7 @@ class ProducerFailureHandlingTest extends KafkaServerTestHarness {
   }
 
   /**
-   * With ack == 1 the future metadata will throw ExecutionException caused by RecordTooLargeException
+   * With ack == 1 the future remoteLogMetadata will throw ExecutionException caused by RecordTooLargeException
    */
   @Test
   def testTooLargeRecordWithAckOne(): Unit = {
@@ -142,7 +142,7 @@ class ProducerFailureHandlingTest extends KafkaServerTestHarness {
   }
 
   /**
-   * With non-exist-topic the future metadata should return ExecutionException caused by TimeoutException
+   * With non-exist-topic the future remoteLogMetadata should return ExecutionException caused by TimeoutException
    */
   @Test
   def testNonExistentTopic(): Unit = {
@@ -152,7 +152,7 @@ class ProducerFailureHandlingTest extends KafkaServerTestHarness {
   }
 
   /**
-   * With incorrect broker-list the future metadata should return ExecutionException caused by TimeoutException
+   * With incorrect broker-list the future remoteLogMetadata should return ExecutionException caused by TimeoutException
    *
    * TODO: other exceptions that can be thrown in ExecutionException:
    *    UnknownTopicOrPartitionException
@@ -199,7 +199,7 @@ class ProducerFailureHandlingTest extends KafkaServerTestHarness {
 
     val record = new ProducerRecord[Array[Byte], Array[Byte]](topic1, null, "key".getBytes, "value".getBytes)
 
-    // first send a message to make sure the metadata is refreshed
+    // first send a message to make sure the remoteLogMetadata is refreshed
     producer1.send(record).get
     producer2.send(record).get
     producer3.send(record).get

@@ -363,7 +363,7 @@ abstract class EndToEndAuthorizationTest extends IntegrationTestHarness with Sas
 
     // Verify that consumer manually assigning both authorized and unauthorized topic doesn't consume
     // from the unauthorized topic and throw; since we can now return data during the time we are updating
-    // metadata / fetching positions, it is possible that the authorized topic record is returned during this time.
+    // remoteLogMetadata / fetching positions, it is possible that the authorized topic record is returned during this time.
     consumer.assign(List(tp, tp2).asJava)
     sendRecords(producer, numRecords, tp2)
     var topic2RecordConsumed = false
@@ -418,7 +418,7 @@ abstract class EndToEndAuthorizationTest extends IntegrationTestHarness with Sas
     noConsumeWithoutDescribeAclSetup()
     val consumer = createConsumer()
     consumer.subscribe(List(topic).asJava)
-    // this should timeout since the consumer will not be able to fetch any metadata for the topic
+    // this should timeout since the consumer will not be able to fetch any remoteLogMetadata for the topic
     assertThrows(classOf[TopicAuthorizationException], () => consumeRecords(consumer, timeout = 3000))
 
     // Verify that no records are consumed even if one of the requested topics is authorized

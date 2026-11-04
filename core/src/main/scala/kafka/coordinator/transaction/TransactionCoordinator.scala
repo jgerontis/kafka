@@ -197,10 +197,10 @@ class TransactionCoordinator(brokerId: Int,
 
     def isValidProducerId(producerIdAndEpoch: ProducerIdAndEpoch): Boolean = {
       // If a producer ID and epoch are provided by the request, fence the producer unless one of the following is true:
-      //   1. The producer epoch is equal to -1, which implies that the metadata was just created. This is the case of a
+      //   1. The producer epoch is equal to -1, which implies that the remoteLogMetadata was just created. This is the case of a
       //      producer recovering from an UNKNOWN_PRODUCER_ID error, and it is safe to return the newly-generated
       //      producer ID.
-      //   2. The expected producer ID matches the ID in current metadata (the epoch will be checked when we try to
+      //   2. The expected producer ID matches the ID in current remoteLogMetadata (the epoch will be checked when we try to
       //      increment it)
       //   3. The expected producer ID matches the previous one and the expected epoch is exhausted, in which case this
       //      could be a retry after a valid epoch bump that the producer never received the response for
@@ -328,8 +328,8 @@ class TransactionCoordinator(brokerId: Int,
       debug(s"Returning ${Errors.INVALID_REQUEST} error code to client for $transactionalId's AddPartitions request")
       responseCallback(Errors.INVALID_REQUEST)
     } else {
-      // try to update the transaction metadata and append the updated metadata to txn log;
-      // if there is no such metadata treat it as invalid producerId mapping error.
+      // try to update the transaction remoteLogMetadata and append the updated remoteLogMetadata to txn log;
+      // if there is no such remoteLogMetadata treat it as invalid producerId mapping error.
       val result: ApiResult[(Int, TxnTransitMetadata)] = txnManager.getTransactionState(transactionalId).flatMap {
         case None => Left(Errors.INVALID_PRODUCER_ID_MAPPING)
 
@@ -337,7 +337,7 @@ class TransactionCoordinator(brokerId: Int,
           val coordinatorEpoch = epochAndMetadata.coordinatorEpoch
           val txnMetadata = epochAndMetadata.transactionMetadata
 
-          // generate the new transaction metadata with added partitions
+          // generate the new transaction remoteLogMetadata with added partitions
           txnMetadata.inLock {
             if (txnMetadata.producerId != producerId) {
               Left(Errors.INVALID_PRODUCER_ID_MAPPING)
@@ -349,7 +349,7 @@ class TransactionCoordinator(brokerId: Int,
             } else if (txnMetadata.state == PrepareCommit || txnMetadata.state == PrepareAbort) {
               Left(Errors.CONCURRENT_TRANSACTIONS)
             } else if (txnMetadata.state == Ongoing && partitions.subsetOf(txnMetadata.topicPartitions)) {
-              // this is an optimization: if the partitions are already in the metadata reply OK immediately
+              // this is an optimization: if the partitions are already in the remoteLogMetadata reply OK immediately
               Left(Errors.NONE)
             } else {
               Right(coordinatorEpoch, txnMetadata.prepareAddPartitions(partitions.toSet, time.milliseconds()))
@@ -464,7 +464,7 @@ class TransactionCoordinator(brokerId: Int,
 
                 if (nextState == PrepareAbort && txnMetadata.pendingState.contains(PrepareEpochFence)) {
                   // We should clear the pending state to make way for the transition to PrepareAbort and also bump
-                  // the epoch in the transaction metadata we are about to append.
+                  // the epoch in the transaction remoteLogMetadata we are about to append.
                   isEpochFence = true
                   txnMetadata.pendingState = None
                   txnMetadata.producerEpoch = producerEpoch
@@ -515,7 +515,7 @@ class TransactionCoordinator(brokerId: Int,
               val preSendResult: ApiResult[(TransactionMetadata, TxnTransitMetadata)] = txnManager.getTransactionState(transactionalId).flatMap {
                 case None =>
                   val errorMsg = s"The coordinator still owns the transaction partition for $transactionalId, but there is " +
-                    s"no metadata in the cache; this is not expected"
+                    s"no remoteLogMetadata in the cache; this is not expected"
                   fatal(errorMsg)
                   throw new IllegalStateException(errorMsg)
 
@@ -577,11 +577,11 @@ class TransactionCoordinator(brokerId: Int,
                 txnManager.getTransactionState(transactionalId).foreach {
                   case None =>
                     warn(s"The coordinator still owns the transaction partition for $transactionalId, but there is " +
-                      s"no metadata in the cache; this is not expected")
+                      s"no remoteLogMetadata in the cache; this is not expected")
 
                   case Some(epochAndMetadata) =>
                     if (epochAndMetadata.coordinatorEpoch == coordinatorEpoch) {
-                      // This was attempted epoch fence that failed, so mark this state on the metadata
+                      // This was attempted epoch fence that failed, so mark this state on the remoteLogMetadata
                       epochAndMetadata.transactionMetadata.hasFailedEpochFence = true
                       warn(s"The coordinator failed to write an epoch fence transition for producer $transactionalId to the transaction log " +
                         s"with error $error. The epoch was increased to ${newMetadata.producerEpoch} but not returned to the client")
@@ -626,7 +626,7 @@ class TransactionCoordinator(brokerId: Int,
     txnManager.timedOutTransactions().foreach { txnIdAndPidEpoch =>
       txnManager.getTransactionState(txnIdAndPidEpoch.transactionalId).foreach {
         case None =>
-          error(s"Could not find transaction metadata when trying to timeout transaction for $txnIdAndPidEpoch")
+          error(s"Could not find transaction remoteLogMetadata when trying to timeout transaction for $txnIdAndPidEpoch")
 
         case Some(epochAndTxnMetadata) =>
           val txnMetadata = epochAndTxnMetadata.transactionMetadata

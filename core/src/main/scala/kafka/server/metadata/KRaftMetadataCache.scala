@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package kafka.server.metadata
+package kafka.server.remoteLogMetadata
 
 import kafka.controller.StateChangeLogger
 import kafka.server.MetadataCache
@@ -35,7 +35,7 @@ import java.util.concurrent.ThreadLocalRandom
 import kafka.admin.BrokerMetadata
 import org.apache.kafka.common.config.ConfigResource
 import org.apache.kafka.common.message.{DescribeClientQuotasRequestData, DescribeClientQuotasResponseData}
-import org.apache.kafka.metadata.{PartitionRegistration, Replicas}
+import org.apache.kafka.remoteLogMetadata.{PartitionRegistration, Replicas}
 
 import scala.collection.{Seq, Set, mutable}
 import scala.jdk.CollectionConverters._
@@ -54,7 +54,7 @@ class KRaftMetadataCache(val brokerId: Int) extends MetadataCache with Logging w
 
   private val stateChangeLogger = new StateChangeLogger(brokerId, inControllerContext = false, None)
 
-  // This method is the main hotspot when it comes to the performance of metadata requests,
+  // This method is the main hotspot when it comes to the performance of remoteLogMetadata requests,
   // we should be careful about adding additional logic here.
   // filterUnavailableEndpoints exists to support v0 MetadataResponses
   private def maybeFilterAliveReplicas(image: MetadataImage,
@@ -97,10 +97,10 @@ class KRaftMetadataCache(val brokerId: Int) extends MetadataCache with Logging w
         maybeLeader match {
           case None =>
             val error = if (!image.cluster().brokers.containsKey(partition.leader)) {
-              debug(s"Error while fetching metadata for ${topicName}-${partitionId}: leader not available")
+              debug(s"Error while fetching remoteLogMetadata for ${topicName}-${partitionId}: leader not available")
               Errors.LEADER_NOT_AVAILABLE
             } else {
-              debug(s"Error while fetching metadata for ${topicName}-${partitionId}: listener $listenerName " +
+              debug(s"Error while fetching remoteLogMetadata for ${topicName}-${partitionId}: listener $listenerName " +
                 s"not found on leader ${partition.leader}")
               if (errorUnavailableListeners) Errors.LISTENER_NOT_FOUND else Errors.LEADER_NOT_AVAILABLE
             }
@@ -114,11 +114,11 @@ class KRaftMetadataCache(val brokerId: Int) extends MetadataCache with Logging w
               .setOfflineReplicas(offlineReplicas)
           case Some(leader) =>
             val error = if (filteredReplicas.size < partition.replicas.size) {
-              debug(s"Error while fetching metadata for ${topicName}-${partitionId}: replica information not available for " +
+              debug(s"Error while fetching remoteLogMetadata for ${topicName}-${partitionId}: replica information not available for " +
                 s"following brokers ${partition.replicas.filterNot(filteredReplicas.contains).mkString(",")}")
               Errors.REPLICA_NOT_AVAILABLE
             } else if (filteredIsr.size < partition.isr.size) {
-              debug(s"Error while fetching metadata for ${topicName}-${partitionId}: in sync replica information not available for " +
+              debug(s"Error while fetching remoteLogMetadata for ${topicName}-${partitionId}: in sync replica information not available for " +
                 s"following brokers ${partition.isr.filterNot(filteredIsr.contains).mkString(",")}")
               Errors.REPLICA_NOT_AVAILABLE
             } else {

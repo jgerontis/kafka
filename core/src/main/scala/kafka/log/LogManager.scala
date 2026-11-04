@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kafka.log.remote.RemoteIndexCache
 import kafka.metrics.KafkaMetricsGroup
 import kafka.server.checkpoints.OffsetCheckpointFile
-import kafka.server.metadata.ConfigRepository
+import kafka.server.remoteLogMetadata.ConfigRepository
 import kafka.server._
 import kafka.utils._
 import org.apache.kafka.common.{KafkaException, TopicPartition, Uuid}
