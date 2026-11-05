@@ -2897,6 +2897,58 @@ public class SenderTest {
     }
 
     @Test
+    public void testAbortableErrorIsPropagatedToUndrainedBatches() throws InterruptedException, ExecutionException {
+        TransactionManager txnManager = new TransactionManager(logContext, "txnId", 60000, 100, apiVersions);
+        setupWithTransactionState(txnManager);
+        doInitTransactions(txnManager, new ProducerIdAndEpoch(123456L, (short) 0));
+        txnManager.beginTransaction();
+        addPartitionToTxn(sender, txnManager, tp0);
+
+        FutureRecordMetadata future = appendToAccumulator(tp0, time.milliseconds(), "key", "value");
+        assertTrue(accumulator.hasUndrained());
+        assertFalse(future.isDone());
+
+        KafkaException error = new KafkaException("Transaction cannot continue");
+        txnManager.transitionToAbortableError(error);
+        sender.runOnce();
+
+        assertTrue(future.isDone());
+        assertSame(error, TestUtils.assertFutureThrows(future, KafkaException.class));
+        assertFalse(accumulator.hasUndrained());
+        assertFalse(accumulator.hasIncomplete());
+        assertTrue(txnManager.hasAbortableError());
+    }
+
+    @Test
+    public void testAbortTransactionWithEmptyAccumulatorAfterAbortableError() {
+        TransactionManager txnManager = new TransactionManager(logContext, "txnId", 60000, 100, apiVersions);
+        setupWithTransactionState(txnManager);
+        doInitTransactions(txnManager, new ProducerIdAndEpoch(123456L, (short) 0));
+        txnManager.beginTransaction();
+        addPartitionToTxn(sender, txnManager, tp0);
+        assertFalse(accumulator.hasIncomplete());
+
+        KafkaException error = new KafkaException("Transaction cannot continue");
+        txnManager.transitionToAbortableError(error);
+        sender.runOnce();
+        assertTrue(txnManager.hasAbortableError());
+        assertSame(error, txnManager.lastError());
+
+        TransactionalRequestResult abortResult = txnManager.beginAbort();
+        assertTrue(txnManager.isAborting());
+        assertNull(txnManager.lastError());
+        client.prepareResponse(new AssertEndTxnRequestMatcher(TransactionResult.ABORT),
+            new EndTxnResponse(new EndTxnResponseData()
+                .setErrorCode(Errors.NONE.code())
+                .setThrottleTimeMs(0)));
+        runUntil(sender, txnManager::isReady);
+
+        assertTrue(abortResult.isSuccessful());
+        assertFalse(accumulator.hasIncomplete());
+        assertFalse(txnManager.hasError());
+    }
+
+    @Test
     public void testDoNotPollWhenNoRequestSent() {
         client = spy(new MockClient(time, metadata));
 
