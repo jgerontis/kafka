@@ -303,7 +303,7 @@ public class OffsetFetchResponseTest {
     }
 
     @Test
-    public void testNullableMetadataV0ToV7() {
+    public void testNullableMetadata() {
         PartitionData pd = new PartitionData(
             offset,
             leaderEpochOne,
@@ -371,7 +371,7 @@ public class OffsetFetchResponseTest {
     }
 
     @Test
-    public void testUseDefaultLeaderEpochV0ToV7() {
+    public void testUseDefaultLeaderEpoch() {
         final Optional<Integer> emptyLeaderEpoch = Optional.empty();
         partitionDataMap.clear();
 

@@ -164,7 +164,7 @@ public class KafkaRaftClient<T> implements RaftClient<T> {
     private final RaftMetadataLogCleanerManager snapshotCleaner;
 
     private final Map<Listener<T>, ListenerContext> listenerContexts = new IdentityHashMap<>();
-    private final ConcurrentLinkedQueue<Registration<T>> pendingRegistrations = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<Registration<T>> pendingListeners = new ConcurrentLinkedQueue<>();
 
     /**
      * Create a new instance.
@@ -381,13 +381,13 @@ public class KafkaRaftClient<T> implements RaftClient<T> {
 
     @Override
     public void register(Listener<T> listener) {
-        pendingRegistrations.add(Registration.register(listener));
+        pendingListeners.add(Registration.register(listener));
         wakeup();
     }
 
     @Override
     public void unregister(Listener<T> listener) {
-        pendingRegistrations.add(Registration.unregister(listener));
+        pendingListeners.add(Registration.unregister(listener));
         // No need to wakeup the polling thread. It is a removal so the updates can be
         // delayed until the polling thread wakes up for other reasons.
     }
@@ -2116,7 +2116,7 @@ public class KafkaRaftClient<T> implements RaftClient<T> {
     private void pollListeners() {
         // Apply all of the pending registration
         while (true) {
-            Registration<T> registration = pendingRegistrations.poll();
+            Registration<T> registration = pendingListeners.poll();
             if (registration == null) {
                 break;
             }

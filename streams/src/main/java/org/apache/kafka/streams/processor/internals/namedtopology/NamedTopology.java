@@ -29,8 +29,8 @@ public class NamedTopology extends Topology {
     
     void setTopologyName(final String newTopologyName) {
         if (name != null) {
-            log.error("Unable to set topologyName = {} because the name is already set to {}", newTopologyName, name);
-            throw new IllegalStateException("Tried to set topologyName but the name was already set");
+            log.error("Unable to set namedTopology = {} because the name is already set to {}", newTopologyName, name);
+            throw new IllegalStateException("Tried to set namedTopology but the name was already set");
         }
         name = newTopologyName;
     }

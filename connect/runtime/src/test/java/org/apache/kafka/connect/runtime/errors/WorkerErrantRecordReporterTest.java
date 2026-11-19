@@ -66,7 +66,7 @@ public class WorkerErrantRecordReporterTest {
     }
 
     @Test
-    public void testGetFutures() {
+    public void testGetAllFutures() {
         Collection<TopicPartition> topicPartitions = new ArrayList<>();
         assertTrue(reporter.futures.isEmpty());
         for (int i = 0; i < 4; i++) {

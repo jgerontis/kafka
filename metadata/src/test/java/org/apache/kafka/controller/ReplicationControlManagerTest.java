@@ -141,11 +141,6 @@ public class ReplicationControlManagerTest {
         }
 
         CreatableTopicResult createTestTopic(String name, int[][] replicas) throws Exception {
-            return createTestTopic(name, replicas, (short) 0);
-        }
-
-        CreatableTopicResult createTestTopic(String name, int[][] replicas,
-                short expectedErrorCode) throws Exception {
             assertFalse(replicas.length == 0);
             CreateTopicsRequestData request = new CreateTopicsRequestData();
             CreatableTopic topic = new CreatableTopic().setName(name);
@@ -159,8 +154,8 @@ public class ReplicationControlManagerTest {
                 replicationControl.createTopics(request);
             CreatableTopicResult topicResult = result.response().topics().find(name);
             assertNotNull(topicResult);
-            assertEquals(expectedErrorCode, topicResult.errorCode());
-            if (expectedErrorCode == NONE.code()) {
+            assertEquals((short) 0, topicResult.errorCode());
+            if ((short) 0 == NONE.code()) {
                 assertEquals(replicas.length, topicResult.numPartitions());
                 assertEquals(replicas[0].length, topicResult.replicationFactor());
                 replay(result.records());
@@ -200,7 +195,7 @@ public class ReplicationControlManagerTest {
             }
         }
 
-        void unfenceBrokers(Integer... brokerIds) throws Exception {
+        void unfenceBroker(Integer... brokerIds) throws Exception {
             for (int brokerId : brokerIds) {
                 ControllerResult<BrokerHeartbeatReply> result = replicationControl.
                     processBrokerHeartbeat(new BrokerHeartbeatRequestData().
@@ -262,7 +257,7 @@ public class ReplicationControlManagerTest {
         assertEquals(expectedResponse, result.response());
 
         ctx.registerBrokers(0, 1, 2);
-        ctx.unfenceBrokers(0, 1, 2);
+        ctx.unfenceBroker(0, 1, 2);
         ControllerResult<CreateTopicsResponseData> result2 =
             replicationControl.createTopics(request);
         CreateTopicsResponseData expectedResponse2 = new CreateTopicsResponseData();
@@ -304,7 +299,7 @@ public class ReplicationControlManagerTest {
             setNumPartitions(1).setReplicationFactor((short) -1));
 
         ctx.registerBrokers(0, 1, 2);
-        ctx.unfenceBrokers(0, 1, 2);
+        ctx.unfenceBroker(0, 1, 2);
 
         List<Uuid> topicsToDelete = new ArrayList<>();
 
@@ -343,7 +338,7 @@ public class ReplicationControlManagerTest {
         ReplicationControlTestContext ctx = new ReplicationControlTestContext();
         ReplicationControlManager replicationControl = ctx.replicationControl;
         ctx.registerBrokers(0, 1, 2, 3);
-        ctx.unfenceBrokers(0, 1, 2, 3);
+        ctx.unfenceBroker(0, 1, 2, 3);
 
         CreatableTopicResult foo = ctx.createTestTopic("foo", new int[][] {
             new int[] {0, 2}, new int[] {0, 1}});
@@ -416,7 +411,7 @@ public class ReplicationControlManagerTest {
         ReplicationControlTestContext ctx = new ReplicationControlTestContext();
         ReplicationControlManager replicationControl = ctx.replicationControl;
         ctx.registerBrokers(0, 1, 2, 3);
-        ctx.unfenceBrokers(0, 1, 2, 3);
+        ctx.unfenceBroker(0, 1, 2, 3);
         CreatableTopicResult result = ctx.createTestTopic("foo",
             new int[][] {
                 new int[] {0, 1, 2},
@@ -441,7 +436,7 @@ public class ReplicationControlManagerTest {
         ReplicationControlTestContext ctx = new ReplicationControlTestContext();
         ReplicationControlManager replicationControl = ctx.replicationControl;
         ctx.registerBrokers(0, 1, 2);
-        ctx.unfenceBrokers(0, 1, 2);
+        ctx.unfenceBroker(0, 1, 2);
         CreatableTopicResult createTopicResult = ctx.createTestTopic("foo",
             new int[][] {new int[] {0, 1, 2}});
 
@@ -471,7 +466,7 @@ public class ReplicationControlManagerTest {
         ReplicationControlTestContext ctx = new ReplicationControlTestContext();
         ReplicationControlManager replicationControl = ctx.replicationControl;
         ctx.registerBrokers(0, 1, 2);
-        ctx.unfenceBrokers(0, 1, 2);
+        ctx.unfenceBroker(0, 1, 2);
         CreatableTopicResult createTopicResult = ctx.createTestTopic("foo",
             new int[][] {new int[] {0, 1, 2}});
 
@@ -627,7 +622,7 @@ public class ReplicationControlManagerTest {
             setNumPartitions(3).setReplicationFactor((short) 2).
             setConfigs(requestConfigs));
         ctx.registerBrokers(0, 1);
-        ctx.unfenceBrokers(0, 1);
+        ctx.unfenceBroker(0, 1);
         ControllerResult<CreateTopicsResponseData> createResult =
             replicationControl.createTopics(request);
         CreateTopicsResponseData expectedResponse = new CreateTopicsResponseData();
@@ -700,7 +695,7 @@ public class ReplicationControlManagerTest {
         request.topics().add(new CreatableTopic().setName("foo2").
             setNumPartitions(2).setReplicationFactor((short) 2));
         ctx.registerBrokers(0, 1);
-        ctx.unfenceBrokers(0, 1);
+        ctx.unfenceBroker(0, 1);
         ControllerResult<CreateTopicsResponseData> createTopicResult =
             replicationControl.createTopics(request);
         ctx.replay(createTopicResult.records());
@@ -816,7 +811,7 @@ public class ReplicationControlManagerTest {
         ReplicationControlTestContext ctx = new ReplicationControlTestContext();
         ReplicationControlManager replication = ctx.replicationControl;
         ctx.registerBrokers(0, 1, 2, 3);
-        ctx.unfenceBrokers(0, 1, 2, 3);
+        ctx.unfenceBroker(0, 1, 2, 3);
         Uuid fooId = ctx.createTestTopic("foo", new int[][] {
             new int[] {1, 2, 3}, new int[] {3, 2, 1}}).topicId();
         ctx.createTestTopic("bar", new int[][] {
@@ -917,7 +912,7 @@ public class ReplicationControlManagerTest {
         ReplicationControlTestContext ctx = new ReplicationControlTestContext();
         ReplicationControlManager replication = ctx.replicationControl;
         ctx.registerBrokers(0, 1, 2, 3, 4);
-        ctx.unfenceBrokers(0, 1, 2, 3, 4);
+        ctx.unfenceBroker(0, 1, 2, 3, 4);
         Uuid fooId = ctx.createTestTopic("foo", new int[][] {
             new int[] {1, 2, 3, 4}, new int[] {0, 1, 2, 3}, new int[] {4, 3, 1, 0},
             new int[] {2, 3, 4, 1}}).topicId();
@@ -1034,15 +1029,34 @@ public class ReplicationControlManagerTest {
     public void testManualPartitionAssignmentOnAllFencedBrokers() throws Exception {
         ReplicationControlTestContext ctx = new ReplicationControlTestContext();
         ctx.registerBrokers(0, 1, 2, 3);
-        ctx.createTestTopic("foo", new int[][] {new int[] {0, 1, 2}},
-            INVALID_REPLICA_ASSIGNMENT.code());
+        int[][] replicas = new int[][] {new int[] {0, 1, 2}};
+        short expectedErrorCode = INVALID_REPLICA_ASSIGNMENT.code();
+        assertFalse(replicas.length == 0);
+        CreateTopicsRequestData request = new CreateTopicsRequestData();
+        CreatableTopic topic = new CreatableTopic().setName("foo");
+        topic.setNumPartitions(-1).setReplicationFactor((short) -1);
+        for (int i = 0; i < replicas.length; i++) {
+            topic.assignments().add(new CreatableReplicaAssignment().
+                setPartitionIndex(i).setBrokerIds(Replicas.toList(replicas[i])));
+        }
+        request.topics().add(topic);
+        ControllerResult<CreateTopicsResponseData> result =
+            ctx.replicationControl.createTopics(request);
+        CreatableTopicResult topicResult = result.response().topics().find("foo");
+        assertNotNull(topicResult);
+        assertEquals(expectedErrorCode, topicResult.errorCode());
+        if (expectedErrorCode == NONE.code()) {
+            assertEquals(replicas.length, topicResult.numPartitions());
+            assertEquals(replicas[0].length, topicResult.replicationFactor());
+            ctx.replay(result.records());
+        }
     }
 
     @Test
     public void testCreatePartitionsFailsWithManualAssignmentWithAllFenced() throws Exception {
         ReplicationControlTestContext ctx = new ReplicationControlTestContext();
         ctx.registerBrokers(0, 1, 2, 3, 4, 5);
-        ctx.unfenceBrokers(0, 1, 2);
+        ctx.unfenceBroker(0, 1, 2);
         Uuid fooId = ctx.createTestTopic("foo", new int[][] {new int[] {0, 1, 2}}).topicId();
         ctx.createPartitions(2, "foo", new int[][] {new int[] {3, 4, 5}},
             INVALID_REPLICA_ASSIGNMENT.code());
@@ -1057,7 +1071,7 @@ public class ReplicationControlManagerTest {
         ReplicationControlTestContext ctx = new ReplicationControlTestContext();
         ReplicationControlManager replication = ctx.replicationControl;
         ctx.registerBrokers(0, 1, 2, 3, 4);
-        ctx.unfenceBrokers(0, 1, 2, 3, 4);
+        ctx.unfenceBroker(0, 1, 2, 3, 4);
 
         Uuid fooId = ctx.createTestTopic("foo", new int[][]{
             new int[]{1, 2, 3}, new int[]{2, 3, 4}, new int[]{0, 2, 1}}).topicId();
@@ -1087,7 +1101,7 @@ public class ReplicationControlManagerTest {
         ReplicationControlTestContext ctx = new ReplicationControlTestContext();
         ReplicationControlManager replication = ctx.replicationControl;
         ctx.registerBrokers(0, 1, 2, 3, 4);
-        ctx.unfenceBrokers(2, 3, 4);
+        ctx.unfenceBroker(2, 3, 4);
         Uuid fooId = ctx.createTestTopic("foo", new int[][]{
             new int[]{1, 2, 3}, new int[]{2, 3, 4}, new int[]{0, 2, 1}}).topicId();
         ElectLeadersRequestData request1 = new ElectLeadersRequestData().
@@ -1120,7 +1134,7 @@ public class ReplicationControlManagerTest {
                             setErrorMessage("No such topic as bar")))));
         assertEquals(expectedResponse1, election1Result.response());
         assertEquals(Collections.emptyList(), election1Result.records());
-        ctx.unfenceBrokers(0, 1);
+        ctx.unfenceBroker(0, 1);
 
         ControllerResult<AlterIsrResponseData> alterIsrResult = replication.alterIsr(
             new AlterIsrRequestData().setBrokerId(2).setBrokerEpoch(102).

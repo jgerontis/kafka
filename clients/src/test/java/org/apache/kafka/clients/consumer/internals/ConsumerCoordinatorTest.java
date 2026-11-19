@@ -2944,7 +2944,7 @@ public abstract class ConsumerCoordinatorTest {
     }
 
     @Test
-    public void testPrepareJoinAndRejoinAfterFailedRebalance() {
+    public void testConsumerRejoinAfterRebalance() {
         final List<TopicPartition> partitions = singletonList(t1p);
         try (ConsumerCoordinator coordinator = prepareCoordinatorForCloseTest(true, false, Optional.of("group-id"))) {
             coordinator.ensureActiveGroup();

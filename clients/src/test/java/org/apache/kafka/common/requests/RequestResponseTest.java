@@ -1066,7 +1066,7 @@ public class RequestResponseTest {
     }
 
     @Test
-    public void testOffsetFetchRequestBuilderToStringV0ToV7() {
+    public void testOffsetFetchRequestBuilderToString() {
         List<Boolean> stableFlags = Arrays.asList(true, false);
         for (Boolean requireStable : stableFlags) {
             String allTopicPartitionsString = new OffsetFetchRequest.Builder("someGroup",

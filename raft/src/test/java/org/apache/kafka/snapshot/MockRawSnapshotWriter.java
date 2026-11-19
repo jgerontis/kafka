@@ -46,19 +46,19 @@ public final class MockRawSnapshotWriter implements RawSnapshotWriter {
 
     @Override
     public long sizeInBytes() {
-        ensureNotFrozenOrClosed();
+        ensureNotFrozen();
         return data.position();
     }
 
     @Override
     public void append(UnalignedMemoryRecords records) {
-        ensureNotFrozenOrClosed();
+        ensureNotFrozen();
         data.write(records.buffer());
     }
 
     @Override
     public void append(MemoryRecords records) {
-        ensureNotFrozenOrClosed();
+        ensureNotFrozen();
         data.write(records.buffer());
     }
 
@@ -69,7 +69,7 @@ public final class MockRawSnapshotWriter implements RawSnapshotWriter {
 
     @Override
     public void freeze() {
-        ensureNotFrozenOrClosed();
+        ensureNotFrozen();
 
         frozen = true;
         ByteBuffer buffer = data.buffer();
@@ -89,7 +89,7 @@ public final class MockRawSnapshotWriter implements RawSnapshotWriter {
         return String.format("MockRawSnapshotWriter(snapshotId=%s, data=%s)", snapshotId, data.buffer());
     }
 
-    private void ensureNotFrozenOrClosed() {
+    private void ensureNotFrozen() {
         if (frozen) {
             throw new IllegalStateException("Snapshot is already frozen " + snapshotId);
         }

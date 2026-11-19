@@ -1003,7 +1003,56 @@ public class NetworkClient implements KafkaClient {
 
         switch (algo) {
             case VANILLA:
-                return vanillaLeastLoadedNode(now, nodes);
+                int inflight = Integer.MAX_VALUE;
+
+                Node foundConnecting = null;
+                Node foundCanConnect = null;
+                Node foundReady = null;
+
+                int offset = this.randOffset.nextInt(nodes.size());
+                for (int i = 0; i < nodes.size(); i++) {
+                    int idx = (offset + i) % nodes.size();
+                    Node node = nodes.get(idx);
+                    if (canSendRequest(node.idString(), now)) {
+                        int currInflight = this.inFlightRequests.count(node.idString());
+                        if (currInflight == 0) {
+                            // if we find an established connection with no in-flight requests we can stop right away
+                            log.trace("Found least loaded node {} connected with no in-flight requests", node);
+                            return node;
+                        } else if (currInflight < inflight) {
+                            // otherwise if this is the best we have found so far, record that
+                            inflight = currInflight;
+                            foundReady = node;
+                        }
+                    } else if (connectionStates.isPreparingConnection(node.idString())) {
+                        foundConnecting = node;
+                    } else if (canConnect(node, now)) {
+                        if (foundCanConnect == null ||
+                            this.connectionStates.lastConnectAttemptMs(foundCanConnect.idString()) >
+                                this.connectionStates.lastConnectAttemptMs(node.idString())) {
+                            foundCanConnect = node;
+                        }
+                    } else {
+                        log.trace("Removing node {} from least loaded node selection since it is neither ready " +
+                            "for sending or connecting", node);
+                    }
+                }
+
+                // We prefer established connections if possible. Otherwise, we will wait for connections
+                // which are being established before connecting to new nodes.
+                if (foundReady != null) {
+                    log.trace("Found least loaded node {} with {} inflight requests", foundReady, inflight);
+                    return foundReady;
+                } else if (foundConnecting != null) {
+                    log.trace("Found least loaded connecting node {}", foundConnecting);
+                    return foundConnecting;
+                } else if (foundCanConnect != null) {
+                    log.trace("Found least loaded node {} with no active connection", foundCanConnect);
+                    return foundCanConnect;
+                } else {
+                    log.trace("Least loaded node selection failed to find an available node");
+                    return null;
+                }
             case AT_LEAST_THREE:
                 return atLeastThreeLeastLoadedNode(now, nodes);
             case RANDOM:
@@ -1012,59 +1061,6 @@ public class NetworkClient implements KafkaClient {
                 return haskinsLeastLoadedNode(now, nodes);
             default:
                 throw new IllegalStateException("unhandled selection algorithm " + algo);
-        }
-    }
-
-    private Node vanillaLeastLoadedNode(long now, List<Node> nodes) {
-        int inflight = Integer.MAX_VALUE;
-
-        Node foundConnecting = null;
-        Node foundCanConnect = null;
-        Node foundReady = null;
-
-        int offset = this.randOffset.nextInt(nodes.size());
-        for (int i = 0; i < nodes.size(); i++) {
-            int idx = (offset + i) % nodes.size();
-            Node node = nodes.get(idx);
-            if (canSendRequest(node.idString(), now)) {
-                int currInflight = this.inFlightRequests.count(node.idString());
-                if (currInflight == 0) {
-                    // if we find an established connection with no in-flight requests we can stop right away
-                    log.trace("Found least loaded node {} connected with no in-flight requests", node);
-                    return node;
-                } else if (currInflight < inflight) {
-                    // otherwise if this is the best we have found so far, record that
-                    inflight = currInflight;
-                    foundReady = node;
-                }
-            } else if (connectionStates.isPreparingConnection(node.idString())) {
-                foundConnecting = node;
-            } else if (canConnect(node, now)) {
-                if (foundCanConnect == null ||
-                    this.connectionStates.lastConnectAttemptMs(foundCanConnect.idString()) >
-                        this.connectionStates.lastConnectAttemptMs(node.idString())) {
-                    foundCanConnect = node;
-                }
-            } else {
-                log.trace("Removing node {} from least loaded node selection since it is neither ready " +
-                    "for sending or connecting", node);
-            }
-        }
-
-        // We prefer established connections if possible. Otherwise, we will wait for connections
-        // which are being established before connecting to new nodes.
-        if (foundReady != null) {
-            log.trace("Found least loaded node {} with {} inflight requests", foundReady, inflight);
-            return foundReady;
-        } else if (foundConnecting != null) {
-            log.trace("Found least loaded connecting node {}", foundConnecting);
-            return foundConnecting;
-        } else if (foundCanConnect != null) {
-            log.trace("Found least loaded node {} with no active connection", foundCanConnect);
-            return foundCanConnect;
-        } else {
-            log.trace("Least loaded node selection failed to find an available node");
-            return null;
         }
     }
 

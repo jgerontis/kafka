@@ -228,11 +228,6 @@ public abstract class AbstractLegacyRecordBatch extends AbstractRecordBatch impl
         if (isCompressed())
             return new DeepRecordsIterator(this, false, Integer.MAX_VALUE, bufferSupplier);
 
-        return shallowIterator();
-    }
-
-    @Override
-    public CloseableIterator<Record> shallowIterator() {
         return new CloseableIterator<Record>() {
             private boolean hasNext = true;
 
@@ -249,7 +244,7 @@ public abstract class AbstractLegacyRecordBatch extends AbstractRecordBatch impl
                 if (!hasNext)
                     throw new NoSuchElementException();
                 hasNext = false;
-                return AbstractLegacyRecordBatch.this;
+                return q.this;
             }
 
             @Override

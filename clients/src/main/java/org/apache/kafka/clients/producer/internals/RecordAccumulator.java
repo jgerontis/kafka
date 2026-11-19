@@ -729,7 +729,34 @@ public final class RecordAccumulator {
         final long expireMs = System.currentTimeMillis() + timeoutMs;
         try {
             while (true) {
-                boolean shouldRetry = awaitFlushAndDetectRetriableForSplitBatch(expireMs, timeoutMs);
+                boolean shouldRetry = false;
+                // Intentionally add a ineffective block to push in the indent so that future rebase is easier
+                {
+                    // Obtain a copy of all of the incomplete ProduceRequestResult(s) at the time of the flush.
+                    // We must be careful not to hold a reference to the ProduceBatch(s) so that garbage
+                    // collection can occur on the contents.
+                    // The sender will remove ProducerBatch(s) from the original incomplete collection.
+                    for (ProduceRequestResult result : this.incomplete.requestResults()) {
+                        long waitTimeMs = expireMs - System.currentTimeMillis();
+                        if (waitTimeMs < 0 || !result.await(waitTimeMs, TimeUnit.MILLISECONDS)) {
+                            throw new TimeoutException("Failed to flush accumulated records within" + timeoutMs + "milliseconds.");
+                        }
+                        // If the produceFuture failed with RecordBatchTooLargeException, it means that the
+                        // batch was split into smaller batches and re-enqueued into the RecordAccumulator by Sender thread.
+                        // This if condition will make sure to retry and send all the split batches.
+                        // Note that, More records get sent to the broker than necessary because the retry mechanism
+                        // will also include all the newly added records via kafkaProducer.send() api.
+                        //
+                        // ### See org.apache.kafka.clients.producer.internals#split ####
+                        // In the 3.0 split batch case implementation, the error is set as
+                        // `produceFuture.set(ProduceResponse.INVALID_OFFSET, NO_TIMESTAMP, index -> new RecordBatchTooLargeException());`,
+                        // which means an arbitrary index can locate it.
+                        if (result.error(-1 /* arbitrary index number */) instanceof RecordBatchTooLargeException) {
+                            shouldRetry = true;
+                            break;
+                        }
+                    }
+                }
                 if (!shouldRetry) {
                     break;
                 }
@@ -737,43 +764,6 @@ public final class RecordAccumulator {
         } finally {
             this.flushesInProgress.decrementAndGet();
         }
-    }
-
-    /**
-     * A method intentionally refactored out to make the awaitFlushCompletion easier to rebase
-     * @param expireMs
-     * @param timeoutMs
-     * @return true if should be retried
-     * @throws InterruptedException
-     */
-    private boolean awaitFlushAndDetectRetriableForSplitBatch(long expireMs, long timeoutMs) throws InterruptedException {
-        // Intentionally add a ineffective block to push in the indent so that future rebase is easier
-        {
-            // Obtain a copy of all of the incomplete ProduceRequestResult(s) at the time of the flush.
-            // We must be careful not to hold a reference to the ProduceBatch(s) so that garbage
-            // collection can occur on the contents.
-            // The sender will remove ProducerBatch(s) from the original incomplete collection.
-            for (ProduceRequestResult result : this.incomplete.requestResults()) {
-                long waitTimeMs = expireMs - System.currentTimeMillis();
-                if (waitTimeMs < 0 || !result.await(waitTimeMs, TimeUnit.MILLISECONDS)) {
-                    throw new TimeoutException("Failed to flush accumulated records within" + timeoutMs + "milliseconds.");
-                }
-                // If the produceFuture failed with RecordBatchTooLargeException, it means that the
-                // batch was split into smaller batches and re-enqueued into the RecordAccumulator by Sender thread.
-                // This if condition will make sure to retry and send all the split batches.
-                // Note that, More records get sent to the broker than necessary because the retry mechanism
-                // will also include all the newly added records via kafkaProducer.send() api.
-                //
-                // ### See org.apache.kafka.clients.producer.internals#split ####
-                // In the 3.0 split batch case implementation, the error is set as
-                // `produceFuture.set(ProduceResponse.INVALID_OFFSET, NO_TIMESTAMP, index -> new RecordBatchTooLargeException());`,
-                // which means an arbitrary index can locate it.
-                if (result.error(-1 /* arbitrary index number */) instanceof RecordBatchTooLargeException) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**
