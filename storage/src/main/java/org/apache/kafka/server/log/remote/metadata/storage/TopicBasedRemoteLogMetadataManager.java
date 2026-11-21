@@ -50,6 +50,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+<<<<<<< HEAD
+=======
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+>>>>>>> a1c2c68db1 (KAFKA-16712 Fix race in TopicBasedRemoteLogMetadataManagerMultipleSubscriptionsTest (#15962))
 
 /**
  * This is the {@link RemoteLogMetadataManager} implementation with storage as an internal topic with name {@link TopicBasedRemoteLogMetadataManagerConfig#REMOTE_LOG_METADATA_TOPIC_NAME}.
@@ -82,6 +88,7 @@ public class TopicBasedRemoteLogMetadataManager implements RemoteLogMetadataMana
 
     private RemotePartitionMetadataStore remotePartitionMetadataStore;
     private volatile TopicBasedRemoteLogMetadataManagerConfig rlmmConfig;
+<<<<<<< HEAD
     private volatile RemoteLogMetadataTopicPartitioner rlmmTopicPartitioner;
     private final Set<TopicIdPartition> pendingAssignPartitions  = Collections.synchronizedSet(new HashSet<>());
 
@@ -92,6 +99,29 @@ public class TopicBasedRemoteLogMetadataManager implements RemoteLogMetadataMana
     // Visible for testing.
     public TopicBasedRemoteLogMetadataManager(boolean startConsumerThread) {
         this.startConsumerThread = startConsumerThread;
+=======
+    private volatile RemoteLogMetadataTopicPartitioner rlmTopicPartitioner;
+    private final Set<TopicIdPartition> pendingAssignPartitions = Collections.synchronizedSet(new HashSet<>());
+    private volatile boolean initializationFailed;
+    private final Supplier<RemotePartitionMetadataStore> remoteLogMetadataManagerSupplier;
+    private final Function<Integer, RemoteLogMetadataTopicPartitioner> remoteLogMetadataTopicPartitionerFunction;
+
+    /**
+     * The default constructor delegates to the internal one, starting the consumer thread and
+     * supplying an instance of RemoteLogMetadataTopicPartitioner and RemotePartitionMetadataStore by default.
+     */
+    public TopicBasedRemoteLogMetadataManager() {
+        this(true, RemoteLogMetadataTopicPartitioner::new, RemotePartitionMetadataStore::new);
+    }
+
+    /**
+     * Used in tests to dynamically configure the instance.
+     */
+    TopicBasedRemoteLogMetadataManager(boolean startConsumerThread, Function<Integer, RemoteLogMetadataTopicPartitioner> remoteLogMetadataTopicPartitionerFunction, Supplier<RemotePartitionMetadataStore> remoteLogMetadataManagerSupplier) {
+        this.startConsumerThread = startConsumerThread;
+        this.remoteLogMetadataManagerSupplier = remoteLogMetadataManagerSupplier;
+        this.remoteLogMetadataTopicPartitionerFunction = remoteLogMetadataTopicPartitionerFunction;
+>>>>>>> a1c2c68db1 (KAFKA-16712 Fix race in TopicBasedRemoteLogMetadataManagerMultipleSubscriptionsTest (#15962))
     }
 
     @Override
@@ -320,10 +350,15 @@ public class TopicBasedRemoteLogMetadataManager implements RemoteLogMetadataMana
             log.info("Started initializing with configs: {}", configs);
 
             rlmmConfig = new TopicBasedRemoteLogMetadataManagerConfig(configs);
+<<<<<<< HEAD
             if (rlmmTopicPartitioner == null) {
                 rlmmTopicPartitioner = new RemoteLogMetadataTopicPartitioner(rlmmConfig.metadataTopicPartitionsCount());
             }
             remotePartitionMetadataStore = new RemotePartitionMetadataStore(new File(rlmmConfig.logDir()).toPath());
+=======
+            rlmTopicPartitioner = remoteLogMetadataTopicPartitionerFunction.apply(rlmmConfig.metadataTopicPartitionsCount());
+            remotePartitionMetadataStore = remoteLogMetadataManagerSupplier.get();
+>>>>>>> a1c2c68db1 (KAFKA-16712 Fix race in TopicBasedRemoteLogMetadataManagerMultipleSubscriptionsTest (#15962))
             configured = true;
             log.info("Successfully initialized with rlmmConfig: {}", rlmmConfig);
 
@@ -436,6 +471,7 @@ public class TopicBasedRemoteLogMetadataManager implements RemoteLogMetadataMana
         return rlmmConfig;
     }
 
+<<<<<<< HEAD
     // Visible for testing.
     public void startConsumerThread() {
         if (consumerManager != null) {
@@ -452,6 +488,8 @@ public class TopicBasedRemoteLogMetadataManager implements RemoteLogMetadataMana
         return consumerManager.isUserPartitionAssignedToPrimary(partition);
     }
 
+=======
+>>>>>>> a1c2c68db1 (KAFKA-16712 Fix race in TopicBasedRemoteLogMetadataManagerMultipleSubscriptionsTest (#15962))
     @Override
     public void close() throws IOException {
         // Close all the resources.

@@ -47,11 +47,11 @@ public class OffsetFetchRequestTest {
     private final String topicTwo = "topic2";
     private final int partitionTwo = 2;
     private final String topicThree = "topic3";
-    private final String group1 = "group1";
     private final String group2 = "group2";
     private final String group3 = "group3";
     private final String group4 = "group4";
     private final String group5 = "group5";
+    private final String group1 = "groupId";
     private List<String> groups = Arrays.asList(group1, group2, group3, group4, group5);
 
     private final List<Integer> listOfVersionsNonBatchOffsetFetch = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
@@ -79,7 +79,7 @@ public class OffsetFetchRequestTest {
         for (short version : ApiKeys.OFFSET_FETCH.allVersions()) {
             if (version < 8) {
                 builder = new OffsetFetchRequest.Builder(
-                    group1,
+                        group1,
                     false,
                     partitions,
                     false);
@@ -113,7 +113,7 @@ public class OffsetFetchRequestTest {
                     request.groupIdsToTopics();
                 assertFalse(request.isAllPartitionsForGroup(group1));
                 assertTrue(groupToPartitionMap.containsKey(group1) && groupToTopicMap.containsKey(
-                    group1));
+                        group1));
                 assertEquals(partitions, groupToPartitionMap.get(group1));
                 OffsetFetchResponse response = request.getErrorResponse(throttleTimeMs, Errors.NONE);
                 assertEquals(Errors.NONE, response.groupLevelError(group1));
@@ -211,7 +211,7 @@ public class OffsetFetchRequestTest {
                 Map<String, List<OffsetFetchRequestTopics>> groupToTopicMap =
                     request.groupIdsToTopics();
                 assertTrue(groupToPartitionMap.containsKey(group1) && groupToTopicMap.containsKey(
-                    group1));
+                        group1));
                 assertNull(groupToPartitionMap.get(group1));
                 assertTrue(request.isAllPartitionsForGroup(group1));
                 assertTrue(request.requireStable());

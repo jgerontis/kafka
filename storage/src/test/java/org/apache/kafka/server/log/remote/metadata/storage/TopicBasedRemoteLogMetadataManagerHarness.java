@@ -34,6 +34,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+<<<<<<< HEAD
+=======
+import java.util.function.Function;
+import java.util.function.Supplier;
+>>>>>>> a1c2c68db1 (KAFKA-16712 Fix race in TopicBasedRemoteLogMetadataManagerMultipleSubscriptionsTest (#15962))
 
 import static org.apache.kafka.server.log.remote.metadata.storage.TopicBasedRemoteLogMetadataManagerConfig.BROKER_ID;
 import static org.apache.kafka.server.log.remote.metadata.storage.TopicBasedRemoteLogMetadataManagerConfig.LOG_DIR;
@@ -58,23 +63,34 @@ public class TopicBasedRemoteLogMetadataManagerHarness extends IntegrationTestHa
 
     public void initialize(Set<TopicIdPartition> topicIdPartitions,
                            boolean startConsumerThread) {
-        initialize(topicIdPartitions, startConsumerThread, null);
-    }
-
-    public void initialize(Set<TopicIdPartition> topicIdPartitions,
-                           boolean startConsumerThread,
-                           RemoteLogMetadataTopicPartitioner remoteLogMetadataTopicPartitioner) {
         // Call setup to start the cluster.
         super.setUp();
 
-        initializeRemoteLogMetadataManager(topicIdPartitions, startConsumerThread, remoteLogMetadataTopicPartitioner);
+<<<<<<< HEAD
+        initializeRemoteLogMetadataManager(topicIdPartitions, startConsumerThread, null);
+=======
+        initializeRemoteLogMetadataManager(topicIdPartitions, startConsumerThread, RemoteLogMetadataTopicPartitioner::new, remotePartitionMetadataStoreSupplier);
+>>>>>>> a1c2c68db1 (KAFKA-16712 Fix race in TopicBasedRemoteLogMetadataManagerMultipleSubscriptionsTest (#15962))
     }
 
     public void initializeRemoteLogMetadataManager(Set<TopicIdPartition> topicIdPartitions,
                                                    boolean startConsumerThread,
+<<<<<<< HEAD
                                                    RemoteLogMetadataTopicPartitioner remoteLogMetadataTopicPartitioner) {
         String logDir = org.apache.kafka.test.TestUtils.tempDirectory("rlmm_segs_").getAbsolutePath();
         topicBasedRemoteLogMetadataManager = new TopicBasedRemoteLogMetadataManager(startConsumerThread) {
+=======
+                                                   Function<Integer, RemoteLogMetadataTopicPartitioner> remoteLogMetadataTopicPartitioner) {
+        initializeRemoteLogMetadataManager(topicIdPartitions, startConsumerThread, remoteLogMetadataTopicPartitioner, RemotePartitionMetadataStore::new);
+    }
+
+    public void initializeRemoteLogMetadataManager(Set<TopicIdPartition> topicIdPartitions,
+                                                   boolean startConsumerThread,
+                                                   Function<Integer, RemoteLogMetadataTopicPartitioner> remoteLogMetadataTopicPartitioner,
+                                                   Supplier<RemotePartitionMetadataStore> remotePartitionMetadataStoreSupplier) {
+        String logDir = TestUtils.tempDirectory("rlmm_segs_").getAbsolutePath();
+        topicBasedRemoteLogMetadataManager = new TopicBasedRemoteLogMetadataManager(startConsumerThread, remoteLogMetadataTopicPartitioner, remotePartitionMetadataStoreSupplier) {
+>>>>>>> a1c2c68db1 (KAFKA-16712 Fix race in TopicBasedRemoteLogMetadataManagerMultipleSubscriptionsTest (#15962))
             @Override
             public void onPartitionLeadershipChanges(Set<TopicIdPartition> leaderPartitions,
                                                      Set<TopicIdPartition> followerPartitions) {
@@ -109,10 +125,13 @@ public class TopicBasedRemoteLogMetadataManagerHarness extends IntegrationTestHa
         configs.putAll(overrideRemoteLogMetadataManagerProps);
         log.debug("TopicBasedRemoteLogMetadataManager configs after adding overridden properties: {}", configs);
 
+<<<<<<< HEAD
         if (remoteLogMetadataTopicPartitioner != null) {
             topicBasedRemoteLogMetadataManager.setRlmmTopicPartitioner(remoteLogMetadataTopicPartitioner);
         }
 
+=======
+>>>>>>> a1c2c68db1 (KAFKA-16712 Fix race in TopicBasedRemoteLogMetadataManagerMultipleSubscriptionsTest (#15962))
         topicBasedRemoteLogMetadataManager.configure(configs);
         try {
             waitUntilInitialized(120_000);
