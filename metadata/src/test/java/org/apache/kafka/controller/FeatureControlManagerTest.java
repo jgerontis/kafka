@@ -41,7 +41,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Timeout(value = 40)
 public class FeatureControlManagerTest {
+<<<<<<< HEAD
     @SuppressWarnings("unchecked")
+=======
+
+>>>>>>> 4e862c0903 (KAFKA-15875: Stops leak Snapshot in public methods (#16807))
     private static Map<String, VersionRange> rangeMap(Object... args) {
         Map<String, VersionRange> result = new HashMap<>();
         for (int i = 0; i < args.length; i += 3) {
@@ -56,10 +60,20 @@ public class FeatureControlManagerTest {
     @Test
     public void testUpdateFeatures() {
         SnapshotRegistry snapshotRegistry = new SnapshotRegistry(new LogContext());
+<<<<<<< HEAD
         snapshotRegistry.getOrCreateSnapshot(-1);
         FeatureControlManager manager = new FeatureControlManager(
             rangeMap("foo", 1, 2), snapshotRegistry);
         assertEquals(new FeatureMapAndEpoch(new FeatureMap(Collections.emptyMap()), -1),
+=======
+        FeatureControlManager manager = new FeatureControlManager.Builder().
+            setQuorumFeatures(features("foo", 1, 2)).
+            setSnapshotRegistry(snapshotRegistry).
+            setMetadataVersion(MetadataVersion.IBP_3_3_IV0).
+            build();
+        snapshotRegistry.idempotentCreateSnapshot(-1);
+        assertEquals(new FinalizedControllerFeatures(Collections.singletonMap("metadata.version", (short) 4), -1),
+>>>>>>> 4e862c0903 (KAFKA-15875: Stops leak Snapshot in public methods (#16807))
             manager.finalizedFeatures(-1));
         assertEquals(ControllerResult.atomicOf(Collections.emptyList(), Collections.
                 singletonMap("foo", new ApiError(Errors.INVALID_UPDATE_VERSION,
@@ -85,6 +99,7 @@ public class FeatureControlManagerTest {
     @Test
     public void testReplay() {
         FeatureLevelRecord record = new FeatureLevelRecord().
+<<<<<<< HEAD
             setName("foo").setMinFeatureLevel((short) 1).setMaxFeatureLevel((short) 2);
         SnapshotRegistry snapshotRegistry = new SnapshotRegistry(new LogContext());
         snapshotRegistry.getOrCreateSnapshot(-1);
@@ -93,6 +108,20 @@ public class FeatureControlManagerTest {
         manager.replay(record);
         snapshotRegistry.getOrCreateSnapshot(123);
         assertEquals(new FeatureMapAndEpoch(new FeatureMap(rangeMap("foo", 1, 2)), 123),
+=======
+            setName("foo").setFeatureLevel((short) 2);
+
+        snapshotRegistry.idempotentCreateSnapshot(-1);
+        FeatureControlManager manager = new FeatureControlManager.Builder().
+                setLogContext(logContext).
+                setQuorumFeatures(features("foo", 1, 2)).
+                setSnapshotRegistry(snapshotRegistry).
+                setMetadataVersion(MetadataVersion.IBP_3_3_IV0).
+                build();
+        manager.replay(record);
+        snapshotRegistry.idempotentCreateSnapshot(123);
+        assertEquals(new FinalizedControllerFeatures(versionMap("metadata.version", 4, "foo", 2), 123),
+>>>>>>> 4e862c0903 (KAFKA-15875: Stops leak Snapshot in public methods (#16807))
             manager.finalizedFeatures(123));
     }
 
@@ -124,7 +153,11 @@ public class FeatureControlManagerTest {
             rangeMap("foo", 1, 3), Collections.emptySet(), Collections.emptyMap());
         assertEquals(Collections.singletonMap("foo", ApiError.NONE), result.response());
         manager.replay((FeatureLevelRecord) result.records().get(0).message());
+<<<<<<< HEAD
         snapshotRegistry.getOrCreateSnapshot(3);
+=======
+        snapshotRegistry.idempotentCreateSnapshot(3);
+>>>>>>> 4e862c0903 (KAFKA-15875: Stops leak Snapshot in public methods (#16807))
 
         assertEquals(ControllerResult.atomicOf(Collections.emptyList(), Collections.
                 singletonMap("foo", new ApiError(Errors.INVALID_UPDATE_VERSION,
@@ -155,10 +188,22 @@ public class FeatureControlManagerTest {
     }
 
     @Test
+<<<<<<< HEAD
     public void testFeatureControlIterator() throws Exception {
         SnapshotRegistry snapshotRegistry = new SnapshotRegistry(new LogContext());
         FeatureControlManager manager = new FeatureControlManager(
             rangeMap("foo", 1, 5, "bar", 1, 2), snapshotRegistry);
+=======
+    public void testReplayRecords() {
+        LogContext logContext = new LogContext();
+        SnapshotRegistry snapshotRegistry = new SnapshotRegistry(logContext);
+        FeatureControlManager manager = new FeatureControlManager.Builder().
+            setLogContext(logContext).
+            setQuorumFeatures(features("foo", 1, 5, "bar", 1, 2)).
+            setSnapshotRegistry(snapshotRegistry).
+            setMetadataVersion(MetadataVersion.IBP_3_3_IV0).
+            build();
+>>>>>>> 4e862c0903 (KAFKA-15875: Stops leak Snapshot in public methods (#16807))
         ControllerResult<Map<String, ApiError>> result = manager.
             updateFeatures(rangeMap("foo", 1, 5, "bar", 1, 1),
                 Collections.emptySet(), Collections.emptyMap());

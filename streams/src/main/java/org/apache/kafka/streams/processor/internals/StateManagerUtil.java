@@ -156,7 +156,7 @@ final class StateManagerUtil {
 
     /**
      *  Parse the task directory name (of the form topicGroupId_partition) and construct the TaskId with the
-     *  optional namedTopology (may be null)
+     *  optional topologyName (may be null)
      *
      *  @throws TaskIdFormatException if the taskIdStr is not a valid {@link TaskId}
      */
