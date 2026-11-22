@@ -92,7 +92,7 @@ public class TopicBasedRemoteLogMetadataManagerWrapperWithHarness implements Rem
     @Override
     public void configure(Map<String, ?> configs) {
         // This will make sure the cluster is up and TopicBasedRemoteLogMetadataManager is initialized.
-        harness.initialize(Collections.emptySet(), true);
+        harness.initialize((Set<TopicIdPartition>) Collections.emptySet(), true);
         delegate().configure(configs);
     }
     
