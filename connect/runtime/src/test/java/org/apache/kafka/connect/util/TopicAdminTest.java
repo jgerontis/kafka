@@ -539,6 +539,24 @@ public class TopicAdminTest {
         }
     }
 
+    // Backport of the KAFKA-15416 exception-wrapping fix (apache/kafka#14313): endOffsets must expose the
+    // broker error itself as the cause, not the ExecutionException wrapper returned by the admin future.
+    @Test
+    public void endOffsetsShouldUseUnderlyingErrorAsCause() {
+        String topicName = "myTopic";
+        TopicPartition tp1 = new TopicPartition(topicName, 0);
+        Set<TopicPartition> tps = Collections.singleton(tp1);
+        Cluster cluster = createCluster(1, topicName, 1);
+        try (AdminClientUnitTestEnv env = new AdminClientUnitTestEnv(new MockTime(), cluster)) {
+            env.kafkaClient().setNodeApiVersions(NodeApiVersions.create());
+            env.kafkaClient().prepareResponse(prepareMetadataResponse(cluster, Errors.NONE));
+            env.kafkaClient().prepareResponse(listOffsetsResultWithClusterAuthorizationException(tp1, null));
+            TopicAdmin admin = new TopicAdmin(null, env.adminClient());
+            ConnectException e = assertThrows(ConnectException.class, () -> admin.endOffsets(tps));
+            assertTrue("cause was " + e.getCause(), e.getCause() instanceof ClusterAuthorizationException);
+        }
+    }
+
     @Test
     public void endOffsetsShouldReturnEmptyMapWhenPartitionsSetIsNull() {
         String topicName = "myTopic";
