@@ -46,6 +46,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.apache.kafka.streams.processor.internals.GlobalStreamThread.State.DEAD;
 import static org.apache.kafka.streams.processor.internals.GlobalStreamThread.State.RUNNING;
@@ -224,6 +225,39 @@ public class GlobalStreamThreadTest {
             "Thread never started.");
 
         globalStreamThread.shutdown();
+    }
+
+    // KAFKA-17474: the RUNNING transition must have happened by the time start() returns,
+    // so callers never observe CREATED after a successful start (no polling allowed here).
+    @Test
+    public void shouldBeInRunningStateAsSoonAsStartReturns() throws Exception {
+        initializeConsumer();
+        globalStreamThread.start();
+
+        assertEquals(RUNNING, globalStreamThread.state());
+
+        globalStreamThread.shutdown();
+        globalStreamThread.join();
+    }
+
+    // KAFKA-17474: RUNNING is only entered after a successful initialization; a failed
+    // startup must go straight to PENDING_SHUTDOWN/DEAD without ever reporting RUNNING.
+    @Test
+    public void shouldNeverReportRunningWhenStartupFails() throws Exception {
+        final List<ThreadStateTransitionValidator> observedStates = new CopyOnWriteArrayList<>();
+        globalStreamThread.setStateListener((thread, newState, oldState) -> observedStates.add(newState));
+
+        // MockConsumer has no partitions configured, so initialization fails
+        try {
+            globalStreamThread.start();
+            fail("Should have thrown StreamsException if start up failed");
+        } catch (final StreamsException expected) {
+            // ok
+        }
+        globalStreamThread.join();
+
+        assertFalse(observedStates.contains(RUNNING));
+        assertEquals(DEAD, globalStreamThread.state());
     }
 
     @Test
