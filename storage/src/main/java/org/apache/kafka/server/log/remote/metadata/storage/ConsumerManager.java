@@ -71,7 +71,7 @@ public class ConsumerManager implements Closeable {
             consumerTaskThread.start();
             log.info("RLMM Consumer task thread is started");
         } catch (Exception e) {
-            throw new KafkaException("Error encountered while initializing and scheduling ConsumerTask thread", e);
+            throw new KafkaException("Error encountered while initializing and scheduling PrimaryConsumerTask thread", e);
         }
     }
 
@@ -115,7 +115,7 @@ public class ConsumerManager implements Closeable {
     public void close() throws IOException {
         closed = true;
         // Consumer task will close the task and it internally closes all the resources including the consumer.
-        Utils.closeQuietly(consumerTask, "ConsumerTask");
+        Utils.closeQuietly(consumerTask, "PrimaryConsumerTask");
 
         // Wait until the consumer thread finishes.
         try {

@@ -231,7 +231,6 @@ public abstract class AbstractLegacyRecordBatch extends AbstractRecordBatch impl
         return shallowIterator();
     }
 
-    @Override
     public CloseableIterator<Record> shallowIterator() {
         return new CloseableIterator<Record>() {
             private boolean hasNext = true;
