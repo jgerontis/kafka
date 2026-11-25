@@ -48,10 +48,15 @@ public class MirrorCheckpointConnectorTest {
 
         List<String> knownConsumerGroups = new ArrayList<>();
         knownConsumerGroups.add(CONSUMER_GROUP);
+<<<<<<< HEAD
         // MirrorCheckpointConnector as minimum to run taskConfig()
         MirrorCheckpointConnector connector = new MirrorCheckpointConnector(knownConsumerGroups,
                                                                             config);
         List<Map<String, String>> output = connector.taskConfigs(1);
+=======
+
+        // MirrorCheckpointConnector as minimum to run getTaskConfigFor()
+>>>>>>> 26051fcac4 (RePatch)
         // expect no task will be created
         assertEquals(0, output.size(), "MirrorCheckpointConnector not disabled");
     }
@@ -64,7 +69,7 @@ public class MirrorCheckpointConnectorTest {
 
         List<String> knownConsumerGroups = new ArrayList<>();
         knownConsumerGroups.add(CONSUMER_GROUP);
-        // MirrorCheckpointConnector as minimum to run taskConfig()
+        // MirrorCheckpointConnector as minimum to run getTaskConfigFor()
         MirrorCheckpointConnector connector = new MirrorCheckpointConnector(knownConsumerGroups,
                 config);
         List<Map<String, String>> output = connector.taskConfigs(1);
@@ -91,7 +96,7 @@ public class MirrorCheckpointConnectorTest {
 
         List<String> knownConsumerGroups = new ArrayList<>();
         knownConsumerGroups.add(CONSUMER_GROUP);
-        // MirrorCheckpointConnector as minimum to run taskConfig()
+        // MirrorCheckpointConnector as minimum to run getTaskConfigFor()
         MirrorCheckpointConnector connector = new MirrorCheckpointConnector(knownConsumerGroups, config);
         List<Map<String, String>> output = connector.taskConfigs(1);
         // expect no task will be created
@@ -105,7 +110,7 @@ public class MirrorCheckpointConnectorTest {
 
         List<String> knownConsumerGroups = new ArrayList<>();
         knownConsumerGroups.add(CONSUMER_GROUP);
-        // MirrorCheckpointConnector as minimum to run taskConfig()
+        // MirrorCheckpointConnector as minimum to run getTaskConfigFor()
         MirrorCheckpointConnector connector = new MirrorCheckpointConnector(knownConsumerGroups, config);
         List<Map<String, String>> output = connector.taskConfigs(1);
         // expect 1 task will be created

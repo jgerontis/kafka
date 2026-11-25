@@ -135,7 +135,11 @@ class StandbyTaskCreator {
             taskId,
             inputPartitions,
             topology,
+<<<<<<< HEAD
             config,
+=======
+            topologyMetadata.getTaskConfigFor(taskId),
+>>>>>>> 26051fcac4 (RePatch)
             streamsMetrics,
             stateManager,
             stateDirectory,

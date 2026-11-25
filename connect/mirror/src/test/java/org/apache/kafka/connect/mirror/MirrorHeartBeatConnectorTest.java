@@ -30,7 +30,7 @@ public class MirrorHeartBeatConnectorTest {
         MirrorConnectorConfig config = new MirrorConnectorConfig(
             makeProps("emit.heartbeats.enabled", "false"));
 
-        // MirrorHeartbeatConnector as minimum to run taskConfig()
+        // MirrorHeartbeatConnector as minimum to run getTaskConfigFor()
         MirrorHeartbeatConnector connector = new MirrorHeartbeatConnector(config);
         List<Map<String, String>> output = connector.taskConfigs(1);
         // expect no task will be created
@@ -43,7 +43,7 @@ public class MirrorHeartBeatConnectorTest {
         MirrorConnectorConfig config = new MirrorConnectorConfig(
             makeProps("enabled", "false"));
 
-        // MirrorHeartbeatConnector as minimum to run taskConfig()
+        // MirrorHeartbeatConnector as minimum to run getTaskConfigFor()
         MirrorHeartbeatConnector connector = new MirrorHeartbeatConnector(config);
         List<Map<String, String>> output = connector.taskConfigs(1);
         // expect one task will be created, even the replication is disabled

@@ -30,14 +30,14 @@ public class SimpleSslContextProvider implements SslContextProvider {
     @Override
     public void configure(Map<String, ?> configs) {
         this.protocol =  (String) configs.get(SslConfigs.SSL_PROTOCOL_CONFIG);
-        this.provider = (String) configs.get(SslConfigs.SSL_PROVIDER_CONFIG);
+        DefaultSslEngineFactory.provider = (String) configs.get(SslConfigs.SSL_PROVIDER_CONFIG);
     }
 
     @Override
     public SSLContext getSSLContext() throws NoSuchAlgorithmException, NoSuchProviderException {
-        if (provider == null) {
+        if (DefaultSslEngineFactory.provider == null) {
             return SSLContext.getInstance(protocol);
         }
-        return SSLContext.getInstance(protocol, provider);
+        return SSLContext.getInstance(protocol, DefaultSslEngineFactory.provider);
     }
 }

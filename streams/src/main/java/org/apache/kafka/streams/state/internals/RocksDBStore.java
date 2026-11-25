@@ -28,6 +28,17 @@ import org.apache.kafka.streams.processor.BatchingStateRestoreCallback;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.StateStore;
 import org.apache.kafka.streams.processor.StateStoreContext;
+<<<<<<< HEAD
+=======
+import org.apache.kafka.streams.processor.internals.ChangelogRecordDeserializationHelper;
+import org.apache.kafka.streams.processor.internals.ProcessorContextUtils;
+import org.apache.kafka.streams.processor.internals.RecordBatchingStateRestoreCallback;
+import org.apache.kafka.streams.query.Position;
+import org.apache.kafka.streams.query.PositionBound;
+import org.apache.kafka.streams.query.Query;
+import org.apache.kafka.streams.query.QueryConfig;
+import org.apache.kafka.streams.query.QueryResult;
+>>>>>>> 26051fcac4 (RePatch)
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.RocksDBConfigSetter;
@@ -68,7 +79,10 @@ import java.util.Objects;
 import java.util.Set;
 
 import static org.apache.kafka.streams.StreamsConfig.METRICS_RECORDING_LEVEL_CONFIG;
-import static org.apache.kafka.streams.processor.internals.ProcessorContextUtils.getMetricsImpl;
+<<<<<<< HEAD
+import static org.apache.kafka.streams.processor.internals.ProcessorContextUtils.metricsImpl;
+=======
+>>>>>>> 26051fcac4 (RePatch)
 
 /**
  * A persistent key-value store based on RocksDB.
@@ -117,6 +131,48 @@ public class RocksDBStore implements KeyValueStore<Bytes, byte[]>, BatchWritingS
         this.name = name;
         this.parentDir = parentDir;
         this.metricsRecorder = metricsRecorder;
+<<<<<<< HEAD
+=======
+        this.autoManagedIterators = autoManagedIterators;
+    }
+
+    @Deprecated
+    @Override
+    public void init(final ProcessorContext context,
+                     final StateStore root) {
+        if (context instanceof StateStoreContext) {
+            init((StateStoreContext) context, root);
+        } else {
+            throw new UnsupportedOperationException(
+                "Use RocksDBStore#init(StateStoreContext, StateStore) instead."
+            );
+        }
+    }
+
+    @Override
+    public void init(final StateStoreContext context,
+                     final StateStore root) {
+        // open the DB dir
+        metricsRecorder.init(ProcessorContextUtils.metricsImpl(context), context.taskId());
+        openDB(context.appConfigs(), context.stateDir());
+
+        final File positionCheckpointFile = new File(context.stateDir(), name() + ".position");
+        this.positionCheckpoint = new OffsetCheckpoint(positionCheckpointFile);
+        this.position = StoreQueryUtils.readPositionFromCheckpoint(positionCheckpoint);
+
+        // value getter should always read directly from rocksDB
+        // since it is only for values that are already flushed
+        this.context = context;
+        context.register(
+            root,
+            (RecordBatchingStateRestoreCallback) this::restoreBatch,
+            () -> StoreQueryUtils.checkpointPosition(positionCheckpoint, position)
+        );
+        consistencyEnabled = StreamsConfig.InternalConfig.getBoolean(
+            context.appConfigs(),
+            IQ_CONSISTENCY_OFFSET_VECTOR_ENABLED,
+            false);
+>>>>>>> 26051fcac4 (RePatch)
     }
 
     @SuppressWarnings("unchecked")
@@ -234,7 +290,7 @@ public class RocksDBStore implements KeyValueStore<Bytes, byte[]>, BatchWritingS
     public void init(final ProcessorContext context,
                      final StateStore root) {
         // open the DB dir
-        metricsRecorder.init(getMetricsImpl(context), context.taskId());
+        metricsRecorder.init(metricsImpl(context), context.taskId());
         openDB(context.appConfigs(), context.stateDir());
 
         // value getter should always read directly from rocksDB
@@ -246,7 +302,7 @@ public class RocksDBStore implements KeyValueStore<Bytes, byte[]>, BatchWritingS
     public void init(final StateStoreContext context,
                      final StateStore root) {
         // open the DB dir
-        metricsRecorder.init(getMetricsImpl(context), context.taskId());
+        metricsRecorder.init(ProcessorContextUtils.metricsImpl(context), context.taskId());
         openDB(context.appConfigs(), context.stateDir());
 
         // value getter should always read directly from rocksDB

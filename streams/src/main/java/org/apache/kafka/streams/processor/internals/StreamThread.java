@@ -64,9 +64,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static org.apache.kafka.streams.processor.internals.ClientUtils.getConsumerClientId;
-import static org.apache.kafka.streams.processor.internals.ClientUtils.getRestoreConsumerClientId;
-import static org.apache.kafka.streams.processor.internals.ClientUtils.getSharedAdminClientId;
+<<<<<<< HEAD
+import static org.apache.kafka.streams.processor.internals.ClientUtils.consumerClientId;
+import static org.apache.kafka.streams.processor.internals.ClientUtils.restoreConsumerClientId;
+import static org.apache.kafka.streams.processor.internals.ClientUtils.adminClientId;
+=======
+import static org.apache.kafka.streams.internals.StreamsConfigUtils.eosEnabled;
+>>>>>>> 26051fcac4 (RePatch)
 
 public class StreamThread extends Thread {
 
@@ -332,7 +336,7 @@ public class StreamThread extends Thread {
         referenceContainer.time = time;
 
         log.info("Creating restore consumer client");
-        final Map<String, Object> restoreConsumerConfigs = config.getRestoreConsumerConfigs(getRestoreConsumerClientId(threadId));
+        final Map<String, Object> restoreConsumerConfigs = config.getRestoreConsumerConfigs(restoreConsumerClientId(threadId));
         final Consumer<byte[], byte[]> restoreConsumer = clientSupplier.getRestoreConsumer(restoreConsumerConfigs);
 
         final StoreChangelogReader changelogReader = new StoreChangelogReader(
@@ -385,7 +389,7 @@ public class StreamThread extends Thread {
 
         log.info("Creating consumer client");
         final String applicationId = config.getString(StreamsConfig.APPLICATION_ID_CONFIG);
-        final Map<String, Object> consumerConfigs = config.getMainConsumerConfigs(applicationId, getConsumerClientId(threadId), threadIdx);
+        final Map<String, Object> consumerConfigs = config.getMainConsumerConfigs(applicationId, consumerClientId(threadId), threadIdx);
         consumerConfigs.put(StreamsConfig.InternalConfig.REFERENCE_CONTAINER_PARTITION_ASSIGNOR, referenceContainer);
 
         final String originalReset = (String) consumerConfigs.get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG);
@@ -419,7 +423,7 @@ public class StreamThread extends Thread {
             cache::resize
         );
 
-        return streamThread.updateThreadMetadata(getSharedAdminClientId(clientId));
+        return streamThread.updateThreadMetadata(adminClientId(clientId));
     }
 
     public enum ProcessingMode {
@@ -1121,8 +1125,8 @@ public class StreamThread extends Thread {
         threadMetadata = new ThreadMetadataImpl(
             getName(),
             state().name(),
-            getConsumerClientId(getName()),
-            getRestoreConsumerClientId(getName()),
+            consumerClientId(getName()),
+            restoreConsumerClientId(getName()),
             taskManager.producerClientIds(),
             adminClientId,
             Collections.emptySet(),
@@ -1158,8 +1162,8 @@ public class StreamThread extends Thread {
         threadMetadata = new ThreadMetadataImpl(
             getName(),
             state().name(),
-            getConsumerClientId(getName()),
-            getRestoreConsumerClientId(getName()),
+            consumerClientId(getName()),
+            restoreConsumerClientId(getName()),
             taskManager.producerClientIds(),
             adminClientId,
             activeTasksMetadata,

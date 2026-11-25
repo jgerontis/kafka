@@ -43,10 +43,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.apache.kafka.streams.processor.internals.ClientUtils.getTaskProducerClientId;
-import static org.apache.kafka.streams.processor.internals.ClientUtils.getThreadProducerClientId;
-import static org.apache.kafka.streams.processor.internals.StreamThread.ProcessingMode.EXACTLY_ONCE_ALPHA;
+<<<<<<< HEAD
+import static org.apache.kafka.streams.processor.internals.ClientUtils.taskProducerClientId;
+import static org.apache.kafka.streams.processor.internals.ClientUtils.threadProducerClientId;
 import static org.apache.kafka.streams.processor.internals.StreamThread.ProcessingMode.EXACTLY_ONCE_V2;
+=======
+import static org.apache.kafka.streams.internals.StreamsConfigUtils.eosEnabled;
+>>>>>>> 26051fcac4 (RePatch)
 
 class ActiveTaskCreator {
     private final InternalTopologyBuilder builder;
@@ -235,7 +238,11 @@ class ActiveTaskCreator {
             inputPartitions,
             topology,
             consumer,
+<<<<<<< HEAD
             config,
+=======
+            topologyMetadata.getTaskConfigFor(taskId),
+>>>>>>> 26051fcac4 (RePatch)
             streamsMetrics,
             stateDirectory,
             cache,
@@ -284,11 +291,11 @@ class ActiveTaskCreator {
 
     Set<String> producerClientIds() {
         if (threadProducer != null) {
-            return Collections.singleton(getThreadProducerClientId(threadId));
+            return Collections.singleton(threadProducerClientId(threadId));
         } else {
             return taskProducers.keySet()
                                 .stream()
-                                .map(taskId -> getTaskProducerClientId(threadId, taskId))
+                                .map(taskId -> taskProducerClientId(threadId, taskId))
                                 .collect(Collectors.toSet());
         }
     }

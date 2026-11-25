@@ -98,6 +98,10 @@ import static org.apache.kafka.streams.StreamsConfig.METRICS_RECORDING_LEVEL_CON
 import static org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_CLIENT;
 import static org.apache.kafka.streams.internals.ApiUtils.prepareMillisCheckFailMsgPrefix;
 import static org.apache.kafka.streams.internals.ApiUtils.validateMillisecondDuration;
+<<<<<<< HEAD
+=======
+import static org.apache.kafka.streams.internals.StreamsConfigUtils.totalCacheSize;
+>>>>>>> 26051fcac4 (RePatch)
 import static org.apache.kafka.streams.processor.internals.ClientUtils.fetchEndOffsets;
 
 /**
@@ -843,12 +847,20 @@ public class KafkaStreams implements AutoCloseable {
 
         // use client id instead of thread client id since this admin client may be shared among threads
         this.clientSupplier = clientSupplier;
-        adminClient = clientSupplier.getAdmin(config.getAdminConfigs(ClientUtils.getSharedAdminClientId(clientId)));
+<<<<<<< HEAD
+        adminClient = clientSupplier.getAdmin(config.getAdminConfigs(ClientUtils.adminClientId(clientId)));
+=======
+        adminClient = clientSupplier.getAdmin(applicationConfigs.getAdminConfigs(ClientUtils.adminClientId(clientId)));
+>>>>>>> 26051fcac4 (RePatch)
 
         log.info("Kafka Streams version: {}", ClientMetrics.version());
         log.info("Kafka Streams commit ID: {}", ClientMetrics.commitId());
 
-        metrics = getMetrics(config, time, clientId);
+<<<<<<< HEAD
+        metrics = createMetrics(config, time, clientId);
+=======
+        metrics = createMetrics(applicationConfigs, time, clientId);
+>>>>>>> 26051fcac4 (RePatch)
         streamsMetrics = new StreamsMetricsImpl(
             metrics,
             clientId,
@@ -872,8 +884,13 @@ public class KafkaStreams implements AutoCloseable {
         streamsUncaughtExceptionHandler = this::defaultStreamsUncaughtExceptionHandler;
         delegatingStateRestoreListener = new DelegatingStateRestoreListener();
 
+<<<<<<< HEAD
         totalCacheSize = config.getLong(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG);
         final int numStreamThreads = getNumStreamThreads(hasGlobalTopology);
+=======
+        totalCacheSize = totalCacheSize(applicationConfigs);
+        final int numStreamThreads = topologyMetadata.getNumStreamThreads(applicationConfigs);
+>>>>>>> 26051fcac4 (RePatch)
         final long cacheSizePerThread = getCacheSizePerThread(numStreamThreads);
 
         GlobalStreamThread.State globalThreadState = null;
@@ -937,7 +954,7 @@ public class KafkaStreams implements AutoCloseable {
         return streamThread;
     }
 
-    private static Metrics getMetrics(final StreamsConfig config, final Time time, final String clientId) {
+    private static Metrics createMetrics(final StreamsConfig config, final Time time, final String clientId) {
         final MetricConfig metricConfig = new MetricConfig()
             .samples(config.getInt(StreamsConfig.METRICS_NUM_SAMPLES_CONFIG))
             .recordLevel(Sensor.RecordingLevel.forName(config.getString(StreamsConfig.METRICS_RECORDING_LEVEL_CONFIG)))
@@ -1064,7 +1081,11 @@ public class KafkaStreams implements AutoCloseable {
                 // make a copy of threads to avoid holding lock
                 for (final StreamThread streamThread : new ArrayList<>(threads)) {
                     final boolean callingThreadIsNotCurrentStreamThread = !streamThread.getName().equals(Thread.currentThread().getName());
+<<<<<<< HEAD
                     if (streamThread.isAlive() && (callingThreadIsNotCurrentStreamThread || getNumLiveStreamThreads() == 1)) {
+=======
+                    if (streamThread.isThreadAlive() && (callingThreadIsNotCurrentStreamThread || getNumLiveStreamThreads() == 1)) {
+>>>>>>> 26051fcac4 (RePatch)
                         log.info("Removing StreamThread " + streamThread.getName());
                         final Optional<String> groupInstanceID = streamThread.getGroupInstanceID();
                         streamThread.requestLeaveGroupDuringShutdown();
@@ -1585,6 +1606,55 @@ public class KafkaStreams implements AutoCloseable {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     *  This method pauses processing for the KafkaStreams instance.
+     *
+     *  <p>Paused topologies will only skip over a) processing, b) punctuation, and c) standby tasks.
+     *  Notably, paused topologies will still poll Kafka consumers, and commit offsets.
+     *  This method sets transient state that is not maintained or managed among instances.
+     *  Note that pause() can be called before start() in order to start a KafkaStreams instance
+     *  in a manner where the processing is paused as described, but the consumers are started up.
+     */
+    public void pause() {
+        if (topologyMetadata.hasNamedTopologies()) {
+            for (final NamedTopology namedTopology : topologyMetadata.getAllNamedTopologies()) {
+                topologyMetadata.pauseTopology(namedTopology.name());
+            }
+        } else {
+            topologyMetadata.pauseTopology(UNNAMED_TOPOLOGY);
+        }
+    }
+
+    /**
+     * @return true when the KafkaStreams instance has its processing paused.
+     */
+    public boolean isPaused() {
+        if (topologyMetadata.hasNamedTopologies()) {
+            return topologyMetadata.getAllNamedTopologies().stream()
+                .map(NamedTopology::name)
+                .allMatch(topologyMetadata::isPaused);
+        } else {
+            return topologyMetadata.isPaused(UNNAMED_TOPOLOGY);
+        }
+    }
+
+    /**
+     * This method resumes processing for the KafkaStreams instance.
+     */
+    public void resume() {
+        if (topologyMetadata.hasNamedTopologies()) {
+            for (final NamedTopology namedTopology : topologyMetadata.getAllNamedTopologies()) {
+                topologyMetadata.resumeTopology(namedTopology.name());
+            }
+        } else {
+            topologyMetadata.resumeTopology(UNNAMED_TOPOLOGY);
+        }
+        threads.forEach(StreamThread::signalResume);
+    }
+
+    /**
+>>>>>>> 26051fcac4 (RePatch)
      * handle each stream thread in a snapshot of threads.
      * noted: iteration over SynchronizedList is not thread safe so it must be manually synchronized. However, we may
      * require other locks when looping threads and it could cause deadlock. Hence, we create a copy to avoid holding

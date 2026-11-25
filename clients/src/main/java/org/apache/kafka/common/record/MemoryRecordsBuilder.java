@@ -410,18 +410,6 @@ public class MemoryRecordsBuilder implements AutoCloseable {
         return writtenCompressed;
     }
 
-    // Validates and throws an exception if the headers contain non-internal record headers
-    private void validateHeaders(Header[] headers) {
-        if (magic < RecordBatch.MAGIC_VALUE_V2 && headers != null && headers.length > 0) {
-            for (Header header : headers) {
-                if (!header.key().startsWith(INTERNAL_HEADER_PREFIX)) {
-                    throw new IllegalArgumentException("Magic v" + magic + " does not support record headers. [Key = "
-                        + header.key() + "]");
-                }
-            }
-        }
-    }
-
     /**
      * Append a new record at the given offset.
      */
@@ -452,6 +440,17 @@ public class MemoryRecordsBuilder implements AutoCloseable {
             }
         } catch (IOException e) {
             throw new KafkaException("I/O exception when writing to the append stream, closing", e);
+        }
+    }
+
+    private void validateHeaders(Header[] headers) {
+        if (magic < RecordBatch.MAGIC_VALUE_V2 && headers != null && headers.length > 0) {
+            for (Header header : headers) {
+                if (!header.key().startsWith(INTERNAL_HEADER_PREFIX)) {
+                    throw new IllegalArgumentException("Magic v" + magic + " does not support record headers. [Key = "
+                        + header.key() + "]");
+                }
+            }
         }
     }
 

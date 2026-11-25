@@ -17,6 +17,7 @@
 
 package org.apache.kafka.clients.admin;
 
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,23 +26,27 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.kafka.clients.*;
+import org.apache.kafka.clients.admin.internals.AdminMetadataManager;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.ElectionType;
-import org.apache.kafka.common.KafkaFuture;
-import org.apache.kafka.common.Metric;
-import org.apache.kafka.common.MetricName;
-import org.apache.kafka.common.TopicCollection;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.TopicPartitionReplica;
+import org.apache.kafka.common.*;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.acl.AclBindingFilter;
 import org.apache.kafka.common.annotation.InterfaceStability;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.FeatureUpdateFailedException;
+import org.apache.kafka.common.metrics.*;
+import org.apache.kafka.common.network.ChannelBuilder;
+import org.apache.kafka.common.network.Selector;
 import org.apache.kafka.common.quota.ClientQuotaAlteration;
 import org.apache.kafka.common.quota.ClientQuotaFilter;
 import org.apache.kafka.common.requests.LeaveGroupResponse;
+import org.apache.kafka.common.utils.LogContext;
+import org.apache.kafka.common.utils.Time;
+
+import static org.apache.kafka.common.utils.Utils.closeQuietly;
 
 /**
  * The administrative client for Kafka, which supports managing and inspecting topics, brokers, configurations and ACLs.
@@ -131,7 +136,7 @@ public interface Admin extends AutoCloseable {
      * @return The new KafkaAdminClient.
      */
     static Admin create(Properties props) {
-        return KafkaAdminClient.createInternal(new AdminClientConfig(props, true), null);
+        return KafkaAdminClient.createInternal(new AdminClientConfig(props, true), (KafkaAdminClient.TimeoutProcessorFactory) null);
     }
 
     /**
@@ -141,7 +146,79 @@ public interface Admin extends AutoCloseable {
      * @return The new KafkaAdminClient.
      */
     static Admin create(Map<String, Object> conf) {
-        return KafkaAdminClient.createInternal(new AdminClientConfig(conf, true), null, null);
+        AdminClientConfig config = new AdminClientConfig(conf, true);
+        Metrics metrics = null;
+        NetworkClient networkClient = null;
+        Time time = Time.SYSTEM;
+        String clientId = KafkaAdminClient.generateClientId(config);
+        ChannelBuilder channelBuilder = null;
+        Selector selector = null;
+        ApiVersions apiVersions = new ApiVersions();
+        LogContext logContext = KafkaAdminClient.createLogContext(clientId);
+        LeastLoadedNodeAlgorithm leastLoadedNodeAlgorithm = LeastLoadedNodeAlgorithm.valueOf(
+            config.getString(AdminClientConfig.LEAST_LOADED_NODE_ALGORITHM_CONFIG)
+        );
+
+        try {
+            // Since we only request node information, it's safe to pass true for allowAutoTopicCreation (and it
+            // simplifies communication with older brokers)
+            AdminMetadataManager metadataManager = new AdminMetadataManager(logContext,
+                config.getLong(AdminClientConfig.RETRY_BACKOFF_MS_CONFIG),
+                config.getLong(AdminClientConfig.METADATA_MAX_AGE_CONFIG));
+            List<InetSocketAddress> addresses = ClientUtils.parseAndValidateAddresses(
+                    config.getList(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG),
+                    config.getString(AdminClientConfig.CLIENT_DNS_LOOKUP_CONFIG));
+            metadataManager.update(Cluster.bootstrap(addresses), time.milliseconds());
+            List<MetricsReporter> reporters = config.getConfiguredInstances(AdminClientConfig.METRIC_REPORTER_CLASSES_CONFIG,
+                MetricsReporter.class,
+                Collections.singletonMap(AdminClientConfig.CLIENT_ID_CONFIG, clientId));
+            Map<String, String> metricTags = Collections.singletonMap("client-id", clientId);
+            MetricConfig metricConfig = new MetricConfig().samples(config.getInt(AdminClientConfig.METRICS_NUM_SAMPLES_CONFIG))
+                .timeWindow(config.getLong(AdminClientConfig.METRICS_SAMPLE_WINDOW_MS_CONFIG), TimeUnit.MILLISECONDS)
+                .recordLevel(Sensor.RecordingLevel.forName(config.getString(AdminClientConfig.METRICS_RECORDING_LEVEL_CONFIG)))
+                .tags(metricTags);
+            JmxReporter jmxReporter = new JmxReporter();
+            jmxReporter.configure(config.originals());
+            reporters.add(jmxReporter);
+            MetricsContext metricsContext = new KafkaMetricsContext(KafkaAdminClient.JMX_PREFIX,
+                    config.originalsWithPrefix(CommonClientConfigs.METRICS_CONTEXT_PREFIX));
+            metrics = new Metrics(metricConfig, reporters, time, metricsContext);
+            metrics.setReplaceOnDuplicateMetric(config.getBoolean(AdminClientConfig.METRICS_REPLACE_ON_DUPLICATE_CONFIG));
+            String metricGrpPrefix = "admin-client";
+            channelBuilder = ClientUtils.createChannelBuilder(config, time, logContext);
+            selector = new Selector(config.getLong(AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG),
+                    metrics, time, metricGrpPrefix, channelBuilder, logContext);
+            networkClient = new NetworkClient(
+                metadataManager.updater(),
+                null,
+                selector,
+                clientId,
+                1,
+                config.getLong(AdminClientConfig.RECONNECT_BACKOFF_MS_CONFIG),
+                config.getLong(AdminClientConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG),
+                config.getInt(AdminClientConfig.SEND_BUFFER_CONFIG),
+                config.getInt(AdminClientConfig.RECEIVE_BUFFER_CONFIG),
+                (int) TimeUnit.HOURS.toMillis(1),
+                config.getLong(AdminClientConfig.SOCKET_CONNECTION_SETUP_TIMEOUT_MS_CONFIG),
+                config.getLong(AdminClientConfig.SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_CONFIG),
+                time,
+                true,
+                apiVersions,
+                null,
+                logContext,
+                (null == null) ? new DefaultHostResolver() : null,
+                null,
+                leastLoadedNodeAlgorithm,
+                Collections.emptyList());
+            return new KafkaAdminClient(config, clientId, time, metadataManager, metrics, networkClient,
+                    null, logContext);
+        } catch (Throwable exc) {
+            closeQuietly(metrics, "Metrics");
+            closeQuietly(networkClient, "NetworkClient");
+            closeQuietly(selector, "Selector");
+            closeQuietly(channelBuilder, "ChannelBuilder");
+            throw new KafkaException("Failed to create new KafkaAdminClient", exc);
+        }
     }
 
     /**

@@ -70,7 +70,54 @@ public class KTableRepartitionMap<K, V, K1, V1> implements KTableProcessorSuppli
         throw new IllegalStateException("KTableRepartitionMap should always require sending old values.");
     }
 
+<<<<<<< HEAD
     private class KTableMapProcessor extends org.apache.kafka.streams.processor.AbstractProcessor<K, Change<V>> {
+=======
+    private class KTableMapProcessor extends ContextualProcessor<K, Change<V>, K1, Change<V1>> {
+
+        private boolean isNotUpgrade;
+
+        @SuppressWarnings("checkstyle:cyclomaticComplexity")
+        private boolean isNotUpgrade(final Map<String, ?> configs) {
+            final Object upgradeFrom = configs.get(StreamsConfig.UPGRADE_FROM_CONFIG);
+            if (upgradeFrom == null) {
+                return true;
+            }
+
+            switch (UpgradeFromValues.getValueFromString((String) upgradeFrom)) {
+                case UPGRADE_FROM_0100:
+                case UPGRADE_FROM_0101:
+                case UPGRADE_FROM_0102:
+                case UPGRADE_FROM_0110:
+                case UPGRADE_FROM_10:
+                case UPGRADE_FROM_11:
+                case UPGRADE_FROM_20:
+                case UPGRADE_FROM_21:
+                case UPGRADE_FROM_22:
+                case UPGRADE_FROM_23:
+                case UPGRADE_FROM_24:
+                case UPGRADE_FROM_25:
+                case UPGRADE_FROM_26:
+                case UPGRADE_FROM_27:
+                case UPGRADE_FROM_28:
+                case UPGRADE_FROM_30:
+                case UPGRADE_FROM_31:
+                case UPGRADE_FROM_32:
+                case UPGRADE_FROM_33:
+                case UPGRADE_FROM_34:
+                    // there is no need to add new versions here
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
+        @Override
+        public void init(final ProcessorContext<K1, Change<V1>> context) {
+            super.init(context);
+            isNotUpgrade = isNotUpgrade(context().appConfigs());
+        }
+>>>>>>> 26051fcac4 (RePatch)
 
         /**
          * @throws StreamsException if key is null

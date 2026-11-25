@@ -48,9 +48,11 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Future;
 
-import static org.apache.kafka.streams.processor.internals.ClientUtils.getTaskProducerClientId;
-import static org.apache.kafka.streams.processor.internals.ClientUtils.getThreadProducerClientId;
-import static org.apache.kafka.streams.processor.internals.StreamThread.ProcessingMode.EXACTLY_ONCE_V2;
+<<<<<<< HEAD
+import static org.apache.kafka.streams.processor.internals.ClientUtils.taskProducerClientId;
+import static org.apache.kafka.streams.processor.internals.ClientUtils.threadProducerClientId;
+=======
+>>>>>>> 26051fcac4 (RePatch)
 
 /**
  * {@code StreamsProducer} manages the producers within a Kafka Streams application.
@@ -89,14 +91,14 @@ public class StreamsProducer {
         final Map<String, Object> producerConfigs;
         switch (processingMode) {
             case AT_LEAST_ONCE: {
-                producerConfigs = config.getProducerConfigs(getThreadProducerClientId(threadId));
+                producerConfigs = config.getProducerConfigs(threadProducerClientId(threadId));
                 eosV2ProducerConfigs = null;
 
                 break;
             }
             case EXACTLY_ONCE_ALPHA: {
                 producerConfigs = config.getProducerConfigs(
-                    getTaskProducerClientId(
+                    taskProducerClientId(
                         threadId,
                         Objects.requireNonNull(taskId, "taskId cannot be null for exactly-once alpha")
                     )
@@ -110,7 +112,7 @@ public class StreamsProducer {
                 break;
             }
             case EXACTLY_ONCE_V2: {
-                producerConfigs = config.getProducerConfigs(getThreadProducerClientId(threadId));
+                producerConfigs = config.getProducerConfigs(threadProducerClientId(threadId));
 
                 final String applicationId = config.getString(StreamsConfig.APPLICATION_ID_CONFIG);
                 producerConfigs.put(

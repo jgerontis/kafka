@@ -177,7 +177,7 @@ public class MirrorSourceConnectorTest {
         // MirrorConnectorConfig example for test
         MirrorConnectorConfig config = new MirrorConnectorConfig(makeProps());
 
-        // MirrorSourceConnector as minimum to run taskConfig()
+        // MirrorSourceConnector as minimum to run getTaskConfigFor()
         MirrorSourceConnector connector = new MirrorSourceConnector(knownSourceTopicPartitions, config);
 
         // distribute the topic-partition to 3 tasks by round-robin

@@ -322,7 +322,11 @@ public class StreamsMetadataState {
     }
 
     public String getStoreForChangelogTopic(final String topicName) {
+<<<<<<< HEAD
         return builder.getChangelogTopicToStore().get(topicName);
+=======
+        return topologyMetadata.getStoreForChangelogTopic(topicName);
+>>>>>>> 26051fcac4 (RePatch)
     }
 
     private class SourceTopicsInfo {

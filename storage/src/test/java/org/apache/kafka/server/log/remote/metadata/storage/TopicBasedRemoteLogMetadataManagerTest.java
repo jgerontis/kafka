@@ -54,7 +54,7 @@ public class TopicBasedRemoteLogMetadataManagerTest {
     @BeforeEach
     public void setup() {
         // Start the cluster and initialize TopicBasedRemoteLogMetadataManager.
-        remoteLogMetadataManagerHarness.initialize(Collections.emptySet(), true);
+        remoteLogMetadataManagerHarness.initialize((java.util.Set<TopicIdPartition>) Collections.emptySet(), true);
     }
 
     @AfterEach
