@@ -43,23 +43,22 @@ public class TaskId implements Comparable<TaskId> {
     /** The ID of the partition. */
     @Deprecated
     public final int partition;
-
-    /** The namedTopology that this task belongs to, or null if it does not belong to one */
+    /** The topologyName that this task belongs to, or null if it does not belong to one */
     private final String topologyName;
 
     public TaskId(final int topicGroupId, final int partition) {
         this(topicGroupId, partition, null);
     }
 
-    public TaskId(final int topicGroupId, final int partition, final String topologyName) {
+    public TaskId(final int topicGroupId, final int partition, final String namedTopology) {
         this.topicGroupId = topicGroupId;
         this.partition = partition;
-        if (topologyName != null && topologyName.length() == 0) {
-            LOG.warn("Empty string passed in for task's namedTopology, since NamedTopology name cannot be empty, we "
+        if (namedTopology != null && namedTopology.length() == 0) {
+            LOG.warn("Empty string passed in for task's topologyName, since NamedTopology name cannot be empty, we "
                          + "assume this task does not belong to a NamedTopology and downgrade this to null");
-            this.topologyName = null;
+            namedTopology = null;
         } else {
-            this.topologyName = topologyName;
+            namedTopology = namedTopology;
         }
     }
 
@@ -160,10 +159,10 @@ public class TaskId implements Comparable<TaskId> {
             return false;
         }
 
-        if (topologyName != null && taskId.topologyName != null) {
-            return topologyName.equals(taskId.topologyName);
+        if (topologyName != null && topologyName != null) {
+            return topologyName.equals(topologyName);
         } else {
-            return topologyName == null && taskId.topologyName == null;
+            return topologyName == null && topologyName == null;
         }
     }
 
@@ -174,14 +173,14 @@ public class TaskId implements Comparable<TaskId> {
 
     @Override
     public int compareTo(final TaskId other) {
-        if (topologyName != null && other.topologyName != null) {
-            final int comparingNamedTopologies = topologyName.compareTo(other.topologyName);
+        if (topologyName != null && topologyName != null) {
+            final int comparingNamedTopologies = topologyName.compareTo(topologyName);
             if (comparingNamedTopologies != 0) {
                 return comparingNamedTopologies;
             }
-        } else if (topologyName != null || other.topologyName != null) {
+        } else if (topologyName != null || topologyName != null) {
             LOG.error("Tried to compare this = {} with other = {}, but only one had a valid named topology", this, other);
-            throw new IllegalStateException("Can't compare a TaskId with a namedTopology to one without");
+            throw new IllegalStateException("Can't compare a TaskId with a topologyName to one without");
         }
         final int comparingTopicGroupId = Integer.compare(this.topicGroupId, other.topicGroupId);
         return comparingTopicGroupId != 0 ? comparingTopicGroupId : Integer.compare(this.partition, other.partition);

@@ -75,30 +75,27 @@ class PrimaryConsumerTask implements Runnable, Closeable {
     private final RemoteLogMetadataTopicPartitioner partitioner;
     private final Time time;
     private final SecondaryConsumerTask secondaryConsumerTask;
+    private final Object assignmentLock = new Object();
+    // Map of remote log metadata topic partition to consumed offsets.
+    private final ConcurrentMap<Integer, Long> readOffsetsByPartition = new ConcurrentHashMap<>();
 
     // It indicates whether the closing process has been started or not. If it is set as true,
     // consumer will stop consuming messages and it will not allow partition assignments to be updated.
     private volatile boolean closing = false;
-    // It indicates whether the consumer needs to assign the partitions or not. This is set when it is
-    // determined that the consumer needs to be assigned with the updated partitions.
-    private volatile boolean assignmentChanged = false;
-
-    private final Object assignmentLock = new Object();
 
     // Remote log metadata topic partitions that primary consumer is assigned to.
     private volatile Set<Integer> assignedMetaPartitions = Collections.emptySet();
 
-    // User topic partitions that this broker is a leader/follower for.
-    private Set<TopicIdPartition> assignedUserTopicPartitions = Collections.emptySet();
-
-    // Map of remote log metadata topic partition to consumed offsets.
-    private final ConcurrentMap<Integer, Long> readOffsetsByPartition = new ConcurrentHashMap<>();
-    private Map<Integer, Long> committedOffsetsByPartition = Collections.emptyMap();
-
     private final long offsetSyncIntervalMs;
-    private CommittedOffsetsFile offsetsFile;
     private volatile long lastSyncedTimeMs;
     private final Object syncCommittedDataLock = new Object();
+    private CommittedOffsetsFile offsetsFile;
+    private Map<Integer, Long> committedOffsetsByPartition = Collections.emptyMap();
+    // It indicates whether the consumer needs to assign the partitions or not. This is set when it is
+    // determined that the consumer needs to be assigned with the updated partitions.
+    private volatile boolean assignmentChanged = false;
+    // User topic partitions that this broker is a leader/follower for.
+    private Set<TopicIdPartition> assignedUserTopicPartitions = Collections.emptySet();
 
     public PrimaryConsumerTask(Map<String, Object> consumerProperties,
                                RemotePartitionMetadataEventHandler handler,
@@ -196,8 +193,31 @@ class PrimaryConsumerTask implements Runnable, Closeable {
     private void resumePartitionsForPrimaryConsumption(Set<TopicIdPartition> newPartitions,
                                                        Map<Integer, Long> consumedPartitionToOffsets) {
         // assign these partitions to primary consumer and also set the offsets to consume from.
-        assignPartitionsForPrimaryConsumption(newPartitions, Collections.emptySet());
+        assignPartitionsForPrimaryConsumption(newPartitions, Collections.<TopicIdPartition>emptySet());
         executeReassignmentAndSeek(assignedMetaPartitions, consumedPartitionToOffsets);
+    }
+
+    private void assignPartitionsForPrimaryConsumption(Set<TopicIdPartition> addedPartitions, Set<TopicIdPartition> removedPartitions) {
+        Set<TopicIdPartition> idealUserPartitions = new HashSet<>(assignedUserTopicPartitions);
+        idealUserPartitions.addAll(addedPartitions);
+        idealUserPartitions.removeAll(removedPartitions);
+
+        Set<Integer> idealMetaPartitions = new HashSet<>();
+        for (TopicIdPartition tp : idealUserPartitions) {
+            idealMetaPartitions.add(partitioner.metadataPartition(tp));
+        }
+        synchronized (assignmentLock) {
+            assignedUserTopicPartitions = Collections.unmodifiableSet(idealUserPartitions);
+            log.debug("Assigned topic partitions: {}", assignedUserTopicPartitions);
+            if (!idealMetaPartitions.equals(assignedMetaPartitions)) {
+                assignedMetaPartitions = Collections.unmodifiableSet(idealMetaPartitions);
+                log.debug("Assigned metadata topic partitions: {}", assignedMetaPartitions);
+                assignmentChanged = true;
+                assignmentLock.notifyAll();
+            } else {
+                log.debug("No change in assigned metadata topic partitions: {}", assignedMetaPartitions);
+            }
+        }
     }
 
     private void syncCommittedDataAndOffsets(boolean forceSync) {
@@ -241,7 +261,7 @@ class PrimaryConsumerTask implements Runnable, Closeable {
     private void maybeWaitForPartitionsAssignmentToPrimaryConsumer() {
         Set<Integer> assignedMetaPartitionsSnapshot = Collections.emptySet();
         synchronized (assignmentLock) {
-            // If it is closing, return immediately. This should be inside the assignPartitionsLock as the closing is updated
+            // If it is closing, return immediately. This should be inside the assignmentLock as the closing is updated
             // in close() method with in the same lock to avoid any race conditions.
             if (closing) {
                 return;
@@ -268,11 +288,11 @@ class PrimaryConsumerTask implements Runnable, Closeable {
         }
     }
 
-    private void handleRemoteLogMetadata(RemoteLogMetadata metadata) {
-        if (assignedUserTopicPartitions.contains(metadata.topicIdPartition())) {
-            handler.handleRemoteLogMetadata(metadata);
+    private void handleRemoteLogMetadata(RemoteLogMetadata remoteLogMetadata) {
+        if (assignedUserTopicPartitions.contains(remoteLogMetadata.topicIdPartition())) {
+            handler.handleRemoteLogMetadata(remoteLogMetadata);
         } else {
-            log.debug("This event {} is skipped as the topic partition is not assigned for this instance.", metadata);
+            log.debug("This event {} is skipped as the topic partition is not assigned for this instance.", remoteLogMetadata);
         }
     }
 
@@ -332,30 +352,6 @@ class PrimaryConsumerTask implements Runnable, Closeable {
         }
     }
 
-    private void assignPartitionsForPrimaryConsumption(Set<TopicIdPartition> addedPartitions,
-                                                       Set<TopicIdPartition> removedPartitions) {
-        Set<TopicIdPartition> idealUserPartitions = new HashSet<>(assignedUserTopicPartitions);
-        idealUserPartitions.addAll(addedPartitions);
-        idealUserPartitions.removeAll(removedPartitions);
-
-        Set<Integer> idealMetaPartitions = new HashSet<>();
-        for (TopicIdPartition tp : idealUserPartitions) {
-            idealMetaPartitions.add(partitioner.metadataPartition(tp));
-        }
-        synchronized (assignmentLock) {
-            assignedUserTopicPartitions = Collections.unmodifiableSet(idealUserPartitions);
-            log.debug("Assigned topic partitions: {}", assignedUserTopicPartitions);
-            if (!idealMetaPartitions.equals(assignedMetaPartitions)) {
-                assignedMetaPartitions = Collections.unmodifiableSet(idealMetaPartitions);
-                log.debug("Assigned metadata topic partitions: {}", assignedMetaPartitions);
-                assignmentChanged = true;
-                assignmentLock.notifyAll();
-            } else {
-                log.debug("No change in assigned metadata topic partitions: {}", assignedMetaPartitions);
-            }
-        }
-    }
-
     public Optional<Long> receivedOffsetForPartition(int partition) {
         return Optional.ofNullable(readOffsetsByPartition.get(partition));
     }
@@ -372,7 +368,7 @@ class PrimaryConsumerTask implements Runnable, Closeable {
         if (!closing) {
             synchronized (assignmentLock) {
                 // Closing should be updated only after acquiring the lock to avoid race in
-                // maybeWaitForPartitionsAssignment() where it waits on assignPartitionsLock. It should not wait
+                // maybeWaitForPartitionsAssignmentToPrimaryConsumer() where it waits on assignmentLock. It should not wait
                 // if the closing is already set.
                 closing = true;
                 try {

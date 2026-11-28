@@ -162,7 +162,7 @@ public class StateDirectoryTest {
 
     @Test
     public void shouldParseNamedTaskId() {
-        final TaskId task = new TaskId(1, 0, "namedTopology");
+        final TaskId task = new TaskId(1, 0, "topologyName");
         assertThat(TaskId.parse(task.toString()), equalTo(task));
     }
 

@@ -55,7 +55,7 @@ public class TopicBasedRemoteLogMetadataManagerRestartTest {
         // Start the cluster and initialize TopicBasedRemoteLogMetadataManager.
         remoteLogMetadataManagerHarness = new TopicBasedRemoteLogMetadataManagerHarness();
         remoteLogMetadataManagerHarness.overrideRemoteLogMetadataManagerProps.put(LOG_DIR, logDir);
-        remoteLogMetadataManagerHarness.initialize(Collections.emptySet(), true);
+        remoteLogMetadataManagerHarness.initialize((java.util.Set<TopicIdPartition>) Collections.emptySet(), true);
     }
 
     private void startTopicBasedRemoteLogMetadataManagerHarness(boolean startConsumerThread) {

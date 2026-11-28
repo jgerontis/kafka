@@ -739,14 +739,8 @@ public final class RecordAccumulator {
         }
     }
 
-    /**
-     * A method intentionally refactored out to make the awaitFlushCompletion easier to rebase
-     * @param expireMs
-     * @param timeoutMs
-     * @return true if should be retried
-     * @throws InterruptedException
-     */
     private boolean awaitFlushAndDetectRetriableForSplitBatch(long expireMs, long timeoutMs) throws InterruptedException {
+        boolean shouldRetry = false;
         // Intentionally add a ineffective block to push in the indent so that future rebase is easier
         {
             // Obtain a copy of all of the incomplete ProduceRequestResult(s) at the time of the flush.
@@ -769,11 +763,12 @@ public final class RecordAccumulator {
                 // `produceFuture.set(ProduceResponse.INVALID_OFFSET, NO_TIMESTAMP, index -> new RecordBatchTooLargeException());`,
                 // which means an arbitrary index can locate it.
                 if (result.error(-1 /* arbitrary index number */) instanceof RecordBatchTooLargeException) {
-                    return true;
+                    shouldRetry = true;
+                    break;
                 }
             }
         }
-        return false;
+        return shouldRetry;
     }
 
     /**

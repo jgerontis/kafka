@@ -58,16 +58,14 @@ public class TopicBasedRemoteLogMetadataManagerHarness extends IntegrationTestHa
 
     public void initialize(Set<TopicIdPartition> topicIdPartitions,
                            boolean startConsumerThread) {
-        initialize(topicIdPartitions, startConsumerThread, null);
+        initialize(topicIdPartitions, startConsumerThread);
     }
 
-    public void initialize(Set<TopicIdPartition> topicIdPartitions,
-                           boolean startConsumerThread,
-                           RemoteLogMetadataTopicPartitioner remoteLogMetadataTopicPartitioner) {
+    public void initialize(Set<TopicIdPartition> topicIdPartitions, boolean startConsumerThread) {
         // Call setup to start the cluster.
         super.setUp();
 
-        initializeRemoteLogMetadataManager(topicIdPartitions, startConsumerThread, remoteLogMetadataTopicPartitioner);
+        initializeRemoteLogMetadataManager(topicIdPartitions, startConsumerThread, null);
     }
 
     public void initializeRemoteLogMetadataManager(Set<TopicIdPartition> topicIdPartitions,

@@ -104,7 +104,7 @@ public class ConsumerProtocolUtils {
     }
 
     /**
-     * @return the namedTopology name, or null if the passed in namedTopology is null or the empty string
+     * @return the topologyName name, or null if the passed in topologyName is null or the empty string
      */
     private static String getNamedTopologyOrElseNull(final String namedTopology) {
         return (namedTopology == null || namedTopology.length() == 0) ?
