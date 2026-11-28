@@ -27,17 +27,17 @@ import org.conscrypt.Conscrypt;
  * A BoringSslContext provider based on Conscrypt library.
  */
 public class BoringSslContextProvider implements SslContextProvider {
-    private String protocol;
     private Provider provider;
+    private String protocol;
 
     @Override
     public void configure(Map<String, ?> configs) {
-        protocol = (String) configs.get(SslConfigs.SSL_PROTOCOL_CONFIG);
+        DefaultSslEngineFactory.protocol = (String) configs.get(SslConfigs.SSL_PROTOCOL_CONFIG);
         provider = Conscrypt.newProvider();
     }
 
     @Override
     public SSLContext getSSLContext()  throws NoSuchAlgorithmException {
-        return SSLContext.getInstance(protocol, provider);
+        return SSLContext.getInstance(DefaultSslEngineFactory.protocol, provider);
     }
 }

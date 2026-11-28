@@ -292,6 +292,10 @@ public class BufferPool {
         }
     }
 
+    private long availableMemoryUnlocked() {
+        return this.nonPooledAvailableMemory + freeSize() * (long) this.poolableSize;
+    }
+
     public void deallocate(ByteBuffer buffer) {
         deallocate(buffer, buffer.capacity());
     }
@@ -302,14 +306,10 @@ public class BufferPool {
     public long availableMemory() {
         lock.lock();
         try {
-            return availableMemoryUnlocked();
+            return this.nonPooledAvailableMemory + freeSize() * (long) this.poolableSize;
         } finally {
             lock.unlock();
         }
-    }
-
-    private long availableMemoryUnlocked() {
-        return this.nonPooledAvailableMemory + freeSize() * (long) this.poolableSize;
     }
 
     // Protected for testing.

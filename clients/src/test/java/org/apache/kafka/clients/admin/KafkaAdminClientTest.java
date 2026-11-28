@@ -258,7 +258,7 @@ public class KafkaAdminClientTest {
     public void testDefaultApiTimeoutAndRequestTimeoutConflicts() {
         final AdminClientConfig config = newConfMap(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "500");
         KafkaException exception = assertThrows(KafkaException.class,
-            () -> KafkaAdminClient.createInternal(config, null));
+            () -> KafkaAdminClient.createInternal(config, (KafkaAdminClient.TimeoutProcessorFactory) null));
         assertTrue(exception.getCause() instanceof ConfigException);
     }
 

@@ -179,12 +179,12 @@ public class SecondaryConsumerTask {
     }
 
     private static class UserPartitions {
-        private final RemoteLogMetadataTopicPartitioner partitioner;
         private final Set<TopicIdPartition> topicIdPartitions = new HashSet<>();
         private final Set<Integer> metadataPartitions = new HashSet<>();
+        private final RemoteLogMetadataTopicPartitioner partitioner;
 
         public UserPartitions(RemoteLogMetadataTopicPartitioner partitioner) {
-            this.partitioner = partitioner;
+            partitioner = partitioner;
         }
 
         public synchronized boolean isEmpty() {
@@ -205,8 +205,8 @@ public class SecondaryConsumerTask {
             return metadataPartitions.contains(metadataPartition);
         }
 
-        public synchronized void addAll(Set<TopicIdPartition> idPartitions) {
-            for (TopicIdPartition idPartition: idPartitions) {
+        public synchronized void addAll(Set<TopicIdPartition> partitions) {
+            for (TopicIdPartition idPartition: partitions) {
                 topicIdPartitions.add(idPartition);
                 metadataPartitions.add(partitioner.metadataPartition(idPartition));
             }
